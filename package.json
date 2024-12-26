@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "0.0.0-development",
   "license": "MIT",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -19,7 +19,8 @@
     "size": "size-limit",
     "analyze": "size-limit --why",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "semantic-release": "semantic-release"
   },
   "husky": {
     "hooks": {
@@ -32,7 +33,7 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "name": "image-filters",
+  "name": "react-image-filters-tool",
   "author": "mariaraspopova",
   "module": "dist/image-filters.esm.js",
   "size-limit": [
@@ -48,6 +49,8 @@
   "devDependencies": {
     "@babel/core": "^7.26.0",
     "@chromatic-com/storybook": "^3.2.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.1",
     "@size-limit/preset-small-lib": "^11.1.6",
     "@storybook/addon-essentials": "^8.4.7",
     "@storybook/addon-interactions": "^8.4.7",
@@ -78,5 +81,9 @@
     "postcss": "^8.4.49",
     "react-is": "^18.3.1",
     "rollup-plugin-postcss": "^4.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Mariarass/image-filters.git"
   }
 }
