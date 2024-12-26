@@ -3,7 +3,7 @@
   "license": "MIT",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
-  "module": "dist/index.esm.js",
+
   "files": [
     "dist"
   ],
@@ -35,7 +35,7 @@
   },
   "name": "react-image-filters-tool",
   "author": "mariaraspopova",
-
+  "module": "dist/image-filters.esm.js",
   "size-limit": [
     {
       "path": "dist/image-filters.cjs.production.min.js",
