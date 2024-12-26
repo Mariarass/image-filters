@@ -76,6 +76,7 @@
     "vite": "^6.0.5"
   },
   "dependencies": {
+    "@semantic-release/changelog": "^6.0.3",
     "autoprefixer": "^10.4.20",
     "cssnano": "^7.0.6",
     "postcss": "^8.4.49",
