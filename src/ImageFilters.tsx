@@ -10,6 +10,7 @@ export type FilterProps = {
     contrast?: number;
     saturation?: number;
     hueRotate?: number;
+    styles?: React.CSSProperties;
 };
 
 type PredefinedFilter = {
@@ -122,6 +123,7 @@ const ImageFilter: React.FC<FilterProps> = ({
                                                 contrast = 100,
                                                 saturation = 100,
                                                 hueRotate = 0,
+    styles
                                             }) => {
     const filterId = useId();
 
@@ -155,6 +157,7 @@ const ImageFilter: React.FC<FilterProps> = ({
                     filter: `${predefinedFilter.cssFilter} url(#${filterId}) brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hueRotate}deg)`,
                     width: '100%',
                     height: '100%',
+                    ...styles
                 }}
             />
         </div>
