@@ -20,7 +20,6 @@ type PredefinedFilter = {
 const predefinedFilters: Record<string, PredefinedFilter> = {
     grayscale: { cssFilter: 'grayscale(100%)' },
     sepia: { cssFilter: 'sepia(100%)' },
-    blur: { cssFilter: 'blur(6px)' },
     brightness: { cssFilter: 'brightness(150%)' },
     contrast: { cssFilter: 'contrast(200%)' },
     saturate: { cssFilter: 'saturate(200%)' },
