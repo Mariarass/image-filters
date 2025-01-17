@@ -1,4 +1,5 @@
-import React, { useId } from 'react';
+import React  from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 export type FilterProps = {
     imageUrl: string;
@@ -14,7 +15,7 @@ export type FilterProps = {
 };
 
 type PredefinedFilter = {
-    cssFilter: string;
+    cssFilter?: string;
     colorMatrix?: string;
 };
 
@@ -66,7 +67,6 @@ const predefinedFilters: Record<string, PredefinedFilter> = {
     nightVibes: { cssFilter: 'brightness(70%) contrast(130%) saturate(90%) hue-rotate(-10deg)' },
     vintageFilm: { cssFilter: 'sepia(60%) contrast(90%) brightness(85%) saturate(80%)' },
     deepBlue: {
-        cssFilter: 'none',
         colorMatrix: `
             0.5 0   0   0 0
             0   0.7 0   0 0
@@ -75,7 +75,6 @@ const predefinedFilters: Record<string, PredefinedFilter> = {
         `,
     },
     goldenTint: {
-        cssFilter: 'none',
         colorMatrix: `
             1.0 0.2 0   0 0
             0.1 0.9 0   0 0
@@ -84,7 +83,6 @@ const predefinedFilters: Record<string, PredefinedFilter> = {
         `,
     },
     lavenderHaze: {
-        cssFilter: 'none',
         colorMatrix: `
             0.7 0.1 0.3 0 0
             0.2 0.6 0.3 0 0
@@ -93,7 +91,6 @@ const predefinedFilters: Record<string, PredefinedFilter> = {
         `,
     },
     emeraldGlow: {
-        cssFilter: 'none',
         colorMatrix: `
             0.6 0   0   0 0
             0   1.1 0   0 0
@@ -102,7 +99,6 @@ const predefinedFilters: Record<string, PredefinedFilter> = {
         `,
     },
     roseTint: {
-        cssFilter: 'none',
         colorMatrix: `
             1.2 0.1 0.2 0 0
             0.2 0.8 0.2 0 0
@@ -110,6 +106,7 @@ const predefinedFilters: Record<string, PredefinedFilter> = {
             0   0   0   1 0
         `,
     },
+
 
 };
 
@@ -125,12 +122,11 @@ const ImageFilter: React.FC<FilterProps> = ({
                                                 hueRotate = 0,
     styles
                                             }) => {
-    const filterId = useId();
-
+    const filterId = `filter-${uuidv4()}`;
 
     const predefinedFilter = predefinedFilters[filter || ''] || {
         cssFilter: '',
-        colorMatrix: undefined,
+        colorMatrix:undefined
     };
 
     const colorMatrix = predefinedFilter.colorMatrix || `
@@ -142,7 +138,7 @@ const ImageFilter: React.FC<FilterProps> = ({
 
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-            <svg width="0" height="0">
+            <svg  width="1" height="1">
                 <filter id={filterId}>
                     <feColorMatrix
                         type="matrix"
@@ -151,13 +147,14 @@ const ImageFilter: React.FC<FilterProps> = ({
                 </filter>
             </svg>
             <img
+                key={filterId}
                 src={imageUrl}
                 alt="Filtered"
                 style={{
-                    filter: `${predefinedFilter.cssFilter} url(#${filterId}) brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hueRotate}deg)`,
+                    filter: `url(#${filterId}) ${predefinedFilter.cssFilter || ''} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hueRotate}deg)`,
                     width: '100%',
                     height: '100%',
-                    ...styles
+                    ...styles,
                 }}
             />
         </div>
