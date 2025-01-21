@@ -1,4 +1,4 @@
-import React  from 'react';
+import React, {useRef, useState} from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import {predefinedFilters} from "./filters";
 
@@ -13,6 +13,8 @@ export type FilterProps = {
     saturation?: number;
     hueRotate?: number;
     styles?: React.CSSProperties;
+    saveImage?: (file: File) => void;
+
 };
 
 const ImageFilter: React.FC<FilterProps> = ({
@@ -25,9 +27,11 @@ const ImageFilter: React.FC<FilterProps> = ({
                                                 contrast = 100,
                                                 saturation = 100,
                                                 hueRotate = 0,
+                                                saveImage,
     styles
                                             }) => {
     const filterId = `filter-${uuidv4()}`;
+    const imgRef = useRef<HTMLImageElement>(null);
 
     const predefinedFilter = predefinedFilters[filter || ''] || {
         cssFilter: '',
@@ -41,9 +45,38 @@ const ImageFilter: React.FC<FilterProps> = ({
         0 0 0 1 0
     `;
 
+
+    const handleSaveImage = () => {
+
+        if (imgRef.current && saveImage) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (!ctx) return;
+
+            const img = imgRef.current;
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+
+            ctx.filter =`url(#${filterId}) ${predefinedFilter.cssFilter || ''} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hueRotate}deg)`,
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const file = new File([blob], 'filtered-image.png', { type: 'image/png' });
+                    saveImage(file);
+       
+                }
+            }, 'image/png');
+        }
+    };
+    if (saveImage) {
+        handleSaveImage();
+    }
+
     return (
-        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-            <svg  width="1" height="1">
+        <div style={{position: 'relative', width: '100%', height: '100%'}}>
+            <svg width="1" height="1">
                 <filter id={filterId}>
                     <feColorMatrix
                         type="matrix"
@@ -51,7 +84,10 @@ const ImageFilter: React.FC<FilterProps> = ({
                     />
                 </filter>
             </svg>
+
             <img
+                ref={imgRef}
+                crossOrigin="anonymous"
                 key={filterId}
                 src={imageUrl}
                 alt="Filtered"

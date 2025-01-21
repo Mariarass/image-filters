@@ -25,6 +25,7 @@ const Template: StoryFn<FilterProps> = (args) => <ImageFilters {...args} />;
 export const Default = Template.bind({});
 
 Default.args = {
+  saveImage:(file)=>{console.log(file)},
   imageUrl:
       'https://static.vecteezy.com/system/resources/previews/028/627/212/non_2x/photorealistic-panoramic-view-of-the-beautiful-natural-landscape-on-the-edge-of-the-lake-in-the-forest-created-with-ai-generative-free-photo.jpg',
 };
