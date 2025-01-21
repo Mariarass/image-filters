@@ -32,7 +32,13 @@ const ImageFilter: React.FC<FilterProps> = ({
                                             }) => {
     const filterId = `filter-${uuidv4()}`;
     const imgRef = useRef<HTMLImageElement>(null);
+    const [useCrossOrigin, setUseCrossOrigin] = React.useState(false);
 
+    const handleImageError = () => {
+        if (!useCrossOrigin) {
+            setUseCrossOrigin(true);
+        }
+    };
     const predefinedFilter = predefinedFilters[filter || ''] || {
         cssFilter: '',
         colorMatrix:undefined
@@ -87,9 +93,10 @@ const ImageFilter: React.FC<FilterProps> = ({
 
             <img
                 ref={imgRef}
-                crossOrigin="anonymous"
+                crossOrigin={useCrossOrigin ? 'anonymous' : undefined}
                 key={filterId}
                 src={imageUrl}
+                onError={handleImageError}
                 alt="Filtered"
                 style={{
                     filter: `url(#${filterId}) ${predefinedFilter.cssFilter || ''} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hueRotate}deg)`,
