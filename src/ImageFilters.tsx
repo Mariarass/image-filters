@@ -71,14 +71,12 @@ const ImageFilter: React.FC<FilterProps> = ({
                 if (blob) {
                     const file = new File([blob], 'filtered-image.png', { type: 'image/png' });
                     saveImage(file);
-       
+
                 }
             }, 'image/png');
         }
     };
-    if (saveImage) {
-        handleSaveImage();
-    }
+
 
     return (
         <div style={{position: 'relative', width: '100%', height: '100%'}}>
@@ -93,10 +91,11 @@ const ImageFilter: React.FC<FilterProps> = ({
 
             <img
                 ref={imgRef}
-                crossOrigin={useCrossOrigin ? 'anonymous' : undefined}
+                crossOrigin={'anonymous'}
                 key={filterId}
                 src={imageUrl}
                 onError={handleImageError}
+                onLoad={handleSaveImage}
                 alt="Filtered"
                 style={{
                     filter: `url(#${filterId}) ${predefinedFilter.cssFilter || ''} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hueRotate}deg)`,
