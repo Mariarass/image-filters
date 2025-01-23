@@ -1,4 +1,4 @@
-import React, {useRef} from 'react';
+import React, {useEffect, useRef} from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import {predefinedFilters} from "./filters";
 
@@ -77,6 +77,11 @@ const ImageFilter: React.FC<FilterProps> = ({
         }
     };
 
+    useEffect(() => {
+        handleSaveImage();
+    }, [imageUrl, filter, redChannel, greenChannel, blueChannel, brightness, contrast, saturation, hueRotate]);
+
+
 
     return (
         <div style={{position: 'relative', width: '100%', height: '100%'}}>
@@ -95,7 +100,6 @@ const ImageFilter: React.FC<FilterProps> = ({
                 key={filterId}
                 src={imageUrl}
                 onError={handleImageError}
-                onLoad={handleSaveImage}
                 alt="Filtered"
                 style={{
                     filter: `url(#${filterId}) ${predefinedFilter.cssFilter || ''} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hueRotate}deg)`,
