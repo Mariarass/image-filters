@@ -1,6 +1,7 @@
-import React, {useEffect, useRef} from 'react';
+import React, { useEffect, useRef} from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import {predefinedFilters} from "./filters";
+import {useDebounce} from "./useDebounce";
 
 export type FilterProps = {
     imageUrl: string;
@@ -33,6 +34,14 @@ const ImageFilter: React.FC<FilterProps> = ({
     const filterId = `filter-${uuidv4()}`;
     const imgRef = useRef<HTMLImageElement>(null);
     const [useCrossOrigin, setUseCrossOrigin] = React.useState(false);
+
+    const debouncedBrightness = useDebounce(brightness, 300);
+    const debouncedContrast = useDebounce(contrast, 300);
+    const debouncedSaturation = useDebounce(saturation, 300);
+    const debouncedHueRotate = useDebounce(hueRotate, 300);
+    const debouncedRedChannel = useDebounce(redChannel, 300);
+    const debouncedGreenChannel = useDebounce(greenChannel, 300);
+    const debouncedBlueChannel = useDebounce(blueChannel, 300);
 
     const handleImageError = () => {
         if (!useCrossOrigin) {
@@ -72,6 +81,7 @@ const ImageFilter: React.FC<FilterProps> = ({
                     const file = new File([blob], 'filtered-image.png', { type: 'image/png' });
                     saveImage(file);
 
+
                 }
             }, 'image/png');
         }
@@ -79,9 +89,12 @@ const ImageFilter: React.FC<FilterProps> = ({
 
     useEffect(() => {
         handleSaveImage();
-    }, [imageUrl, filter, redChannel, greenChannel, blueChannel, brightness, contrast, saturation, hueRotate]);
-
-
+    }, [debouncedBrightness, debouncedContrast,
+        debouncedSaturation,
+        debouncedHueRotate,
+        debouncedRedChannel,
+        debouncedGreenChannel,
+        debouncedBlueChannel,]);
 
     return (
         <div style={{position: 'relative', width: '100%', height: '100%'}}>
@@ -93,7 +106,6 @@ const ImageFilter: React.FC<FilterProps> = ({
                     />
                 </filter>
             </svg>
-
             <img
                 ref={imgRef}
                 crossOrigin={'anonymous'}
