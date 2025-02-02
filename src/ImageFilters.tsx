@@ -45,8 +45,6 @@ const ImageFilter: React.FC<FilterProps> = ({
     // Reference to the <img> element
     const imgRef = useRef<HTMLImageElement>(null);
 
-    // Store the generated image URL after filters are applied
-    const [savedImage, setSavedImage] = useState<string | null>(null);
     // Indicates whether the image has finished loading
     const [isReady, setIsReady] = useState(false);
 
@@ -141,8 +139,6 @@ const ImageFilter: React.FC<FilterProps> = ({
         canvas.toBlob((blob) => {
             if (!blob) return;
             const file = new File([blob], 'filtered-image.png', { type: 'image/png' });
-            const savedImageUrl = URL.createObjectURL(file);
-            setSavedImage(savedImageUrl);
             saveImage(file);
         }, 'image/png');
     };
@@ -187,15 +183,6 @@ const ImageFilter: React.FC<FilterProps> = ({
                     ...styles,
                 }}
             />
-
-            {/* Display a preview of the saved image if it exists */}
-            {savedImage && (
-                <div>
-                    <h3>Saved Image:</h3>
-                    <img src={savedImage} alt="Saved Filtered" style={{width: 300}}/>
-
-                </div>
-            )}
         </div>
     );
 };
