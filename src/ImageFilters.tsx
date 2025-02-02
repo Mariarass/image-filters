@@ -1,7 +1,16 @@
-import React, { useEffect, useRef} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import {predefinedFilters} from "./filters";
-import {useDebounce} from "./useDebounce";
+import { predefinedFilters } from './helpers/filters';
+
+import { useDebounce } from './hooks/useDebounce';
+import {
+    applyColorMatrix,
+    applyCombinedFilters,
+    getCombinedCssFilter,
+    matrixToString,
+    multiplyColorMatrices,
+    parseColorMatrix
+} from "./hooks/matrixUtils";
 
 export type FilterProps = {
     imageUrl: string;
@@ -15,7 +24,6 @@ export type FilterProps = {
     hueRotate?: number;
     styles?: React.CSSProperties;
     saveImage?: (file: File) => void;
-
 };
 
 const ImageFilter: React.FC<FilterProps> = ({
@@ -29,12 +37,20 @@ const ImageFilter: React.FC<FilterProps> = ({
                                                 saturation = 100,
                                                 hueRotate = 0,
                                                 saveImage,
-    styles
+                                                styles,
                                             }) => {
+    // Generate a unique filter ID for SVG filter references
     const filterId = `filter-${uuidv4()}`;
-    const imgRef = useRef<HTMLImageElement>(null);
-    const [useCrossOrigin, setUseCrossOrigin] = React.useState(false);
 
+    // Reference to the <img> element
+    const imgRef = useRef<HTMLImageElement>(null);
+
+    // Store the generated image URL after filters are applied
+    const [savedImage, setSavedImage] = useState<string | null>(null);
+    // Indicates whether the image has finished loading
+    const [isReady, setIsReady] = useState(false);
+
+    // Debounce all numeric props to avoid rapid re-renders
     const debouncedBrightness = useDebounce(brightness, 300);
     const debouncedContrast = useDebounce(contrast, 300);
     const debouncedSaturation = useDebounce(saturation, 300);
@@ -43,83 +59,143 @@ const ImageFilter: React.FC<FilterProps> = ({
     const debouncedGreenChannel = useDebounce(greenChannel, 300);
     const debouncedBlueChannel = useDebounce(blueChannel, 300);
 
-    const handleImageError = () => {
-        if (!useCrossOrigin) {
-            setUseCrossOrigin(true);
-        }
-    };
-    const predefinedFilter = predefinedFilters[filter || ''] || {
-        cssFilter: '',
-        colorMatrix:undefined
+    // Called once the <img> element has fully loaded
+    const onImageLoad = () => {
+        setIsReady(true);
     };
 
-    const colorMatrix = predefinedFilter.colorMatrix || `
-        ${redChannel} 0 0 0 0
-        0 ${greenChannel} 0 0 0
-        0 0 ${blueChannel} 0 0
-        0 0 0 1 0
-    `;
+    // 1) Retrieve the predefined filter from our presets (if it exists)
+    const predefinedFilter = filter && predefinedFilters[filter]
+        ? predefinedFilters[filter]
+        : {
+            cssFilter: '',
+            colorMatrix: undefined,
+        };
 
+    // 2) Create a color matrix string for the user-defined R/G/B channels
+    const userMatrixStr = `
+    ${redChannel} 0 0 0 0
+    0 ${greenChannel} 0 0 0
+    0 0 ${blueChannel} 0 0
+    0 0 0 1 0
+  `;
 
+    // 3) If the predefined filter has its own colorMatrix, multiply it
+    //    with the user's matrix to combine both transformations
+    let finalMatrixStr = userMatrixStr;
+    if (predefinedFilter.colorMatrix) {
+        const presetM = parseColorMatrix(predefinedFilter.colorMatrix);
+        const userM = parseColorMatrix(userMatrixStr);
+        const res = multiplyColorMatrices(presetM, userM);
+        finalMatrixStr = matrixToString(res);
+    }
+
+    // 4) Calculate the combined CSS filter string from both the preset
+    //    and the user's brightness/contrast/saturation/hueRotate adjustments
+    const combinedCssFilter = getCombinedCssFilter(
+        predefinedFilter.cssFilter,
+        brightness,
+        contrast,
+        saturation,
+        hueRotate
+    );
+
+    // Save the final, filtered image as a blob
     const handleSaveImage = () => {
+        // If there's no <img> ref, image isn't ready, or saveImage callback is missing, do nothing
+        if (!imgRef.current || !isReady || !saveImage) return;
 
-        if (imgRef.current && saveImage) {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
+        const img = imgRef.current;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
-            if (!ctx) return;
+        // Match canvas size to the original image dimensions
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
 
-            const img = imgRef.current;
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
+        // Draw the original image onto the canvas
+        ctx.drawImage(img, 0, 0);
 
-            ctx.filter =`url(#${filterId}) ${predefinedFilter.cssFilter || ''} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hueRotate}deg)`,
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        // Extract the raw pixel data
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const pixels = imageData.data;
 
-            canvas.toBlob((blob) => {
-                if (blob) {
-                    const file = new File([blob], 'filtered-image.png', { type: 'image/png' });
-                    saveImage(file);
+        // Apply the final (combined) color matrix to the pixel data
+        applyColorMatrix(pixels, finalMatrixStr);
 
+        // Apply any remaining CSS-based filters (brightness, contrast, etc.)
+        applyCombinedFilters(
+            pixels,
+            predefinedFilter.cssFilter,
+            brightness,
+            contrast,
+            saturation,
+            hueRotate
+        );
 
-                }
-            }, 'image/png');
-        }
+        // Write the updated pixel data back to the canvas
+        ctx.putImageData(imageData, 0, 0);
+
+        // Convert the canvas to a blob -> File -> Object URL, then pass it to the saveImage callback
+        canvas.toBlob((blob) => {
+            if (!blob) return;
+            const file = new File([blob], 'filtered-image.png', { type: 'image/png' });
+            const savedImageUrl = URL.createObjectURL(file);
+            setSavedImage(savedImageUrl);
+            saveImage(file);
+        }, 'image/png');
     };
 
+    // Whenever filters or debounced values change (or the image is ready),
+    // re-apply and save the filtered image
     useEffect(() => {
         handleSaveImage();
-    }, [debouncedBrightness, debouncedContrast,
+    }, [
+        filter,
+        debouncedBrightness,
+        debouncedContrast,
         debouncedSaturation,
         debouncedHueRotate,
         debouncedRedChannel,
         debouncedGreenChannel,
-        debouncedBlueChannel,]);
+        debouncedBlueChannel,
+        isReady,
+    ]);
 
     return (
-        <div style={{position: 'relative', width: '100%', height: '100%'}}>
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+
             <svg width="1" height="1">
-                <filter id={filterId}>
-                    <feColorMatrix
-                        type="matrix"
-                        values={colorMatrix}
-                    />
+                <filter id={filterId}  colorInterpolationFilters="sRGB">
+                    <feColorMatrix type="matrix" values={finalMatrixStr}/>
                 </filter>
             </svg>
+
+            {/* The image itself, referencing both the SVG filter and the CSS filters */}
             <img
                 ref={imgRef}
-                crossOrigin={'anonymous'}
+                crossOrigin="anonymous"
                 key={filterId}
                 src={imageUrl}
-                onError={handleImageError}
                 alt="Filtered"
+                onLoad={onImageLoad}
                 style={{
-                    filter: `url(#${filterId}) ${predefinedFilter.cssFilter || ''} brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hueRotate}deg)`,
+                    filter: `url(#${filterId}) ${combinedCssFilter}`,
                     width: '100%',
                     height: '100%',
                     ...styles,
                 }}
             />
+
+            {/* Display a preview of the saved image if it exists */}
+            {savedImage && (
+                <div>
+                    <h3>Saved Image:</h3>
+                    <img src={savedImage} alt="Saved Filtered" style={{width: 300}}/>
+
+                </div>
+            )}
         </div>
     );
 };

@@ -90,6 +90,57 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
             0   0   0   1 0
         `,
     },
+    arcticInversion: {
+        colorMatrix: `
+    1    0    0    0 0
+    0   0.8   0    0 0
+    0    0  -1.8   0 0
+    0    0    0    1 0
+  `,
+    },
 
+    crimsonGlow: {
+        colorMatrix: `
+    1.3  0    0    0 0
+    0   0.8   0    0 0
+    0    0    1    0 0
+    0    0    0    1 0
+  `,
+    },
+    rusticSunset: {
+        cssFilter:'brightness(94%) contrast(93%) saturate(80%) hue-rotate(1deg)',
+        colorMatrix: `
+    1.2 0     0    0 0
+    0    0.7  0    0 0
+    0    0    0.6  0 0
+    0    0     0   1 0
+  `,
+    },
+    sunsetDream: {
+        colorMatrix: `
+      1.2 0.1 0.0 0 0
+      0.0 1.1 0.0 0 0
+      0.0 0.0 0.7 0 0
+      0   0   0   1 0
+    `,
+    },
 
-};
+    blueLagoon: {
+        colorMatrix: `
+      0.8 0.0 0.1 0 0
+      0.0 0.9 0.0 0 0
+      0.0 0.0 1.5 0 0
+      0   0   0   1 0
+    `,
+    },
+    amberGlow: {
+        colorMatrix: `
+      1.2 0.0 0.0 0 0
+      0.0 1.1 0.0 0 0
+      0.0 0.0 0.6 0 0
+      0   0   0   1 0
+    `,
+    },
+
+}
+;
