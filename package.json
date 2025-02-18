@@ -17,7 +17,7 @@
     "prepare": "tsdx build",
     "size": "size-limit",
     "analyze": "size-limit --why",
-    "storybook": "storybook dev -p 6006",
+    "storybook": "storybook dev -p 3000",
     "build-storybook": "storybook build",
     "semantic-release": "semantic-release"
   },

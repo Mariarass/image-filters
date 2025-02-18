@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { predefinedFilters } from './helpers/filters';
 import { useDebounce } from './hooks/useDebounce';
 import { multiplyColorMatrices } from "./hooks/matrixUtils";
@@ -42,7 +42,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
                                                  }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement>(new Image());
-    const [savedImage, setSavedImage] = useState<string | null>(null);
+    // const [savedImage, setSavedImage] = useState<string | null>(null);
 
     // Debounce the values
     const debouncedBrightness = useDebounce(brightness, 300);
@@ -315,6 +315,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
         grain,
         sharpness,
         intensity,
+        filter
     ]);
 
     // Save the image if a saveImage function is provided
@@ -354,8 +355,8 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
                 if (blob) {
                     console.log("📸 Image saved!");
                     const file = new File([blob], "filtered-image.png", { type: "image/png" });
-                    const imUrl = URL.createObjectURL(file);
-                    setSavedImage(imUrl);
+                   // const imUrl = URL.createObjectURL(file);
+                    // setSavedImage(imUrl);
                     saveImage(file);
                 }
             }, "image/png");
@@ -379,9 +380,9 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%', ...styles }}>
             <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
-            {saveImage && (
-                <img src={savedImage ?? undefined} alt="Saved preview" style={{ width: '200px' }} />
-            )}
+            {/*{saveImage && (*/}
+            {/*    <img src={savedImage ?? undefined} alt="Saved preview" style={{ width: '200px' }} />*/}
+            {/*)}*/}
         </div>
     );
 };
