@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { predefinedFilters } from './helpers/filters';
 import { useDebounce } from './hooks/useDebounce';
 import { multiplyColorMatrices } from "./hooks/matrixUtils";
@@ -20,6 +20,7 @@ export type FilterProps = {
     sharpness?: number;
     styles?: React.CSSProperties;
     saveImage?: (file: File) => void;
+    preview?: boolean;
 };
 
 const WebGLImageFilter: React.FC<FilterProps> = ({
@@ -39,10 +40,11 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
                                                      sharpness = 0, // sharpness is disabled by default
                                                      saveImage,
                                                      styles,
+                                                     preview
                                                  }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement>(new Image());
-    // const [savedImage, setSavedImage] = useState<string | null>(null);
+    const [savedImage, setSavedImage] = useState<string | null>(null);
 
     // Debounce the values
     const debouncedBrightness = useDebounce(brightness, 300);
@@ -185,6 +187,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
 
     useEffect(() => {
         const canvas = canvasRef.current;
+        console.log('filter')
         if (!canvas) return;
         const gl = canvas.getContext("webgl");
         if (!gl) {
@@ -298,6 +301,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
             );
             gl.drawArrays(gl.TRIANGLES, 0, 6);
         };
+
     }, [
         imageUrl,
         brightness,
@@ -315,7 +319,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
         grain,
         sharpness,
         intensity,
-        filter
+        filter,
     ]);
 
     // Save the image if a saveImage function is provided
@@ -323,13 +327,22 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
         const canvas = canvasRef.current;
         if (!canvas || !saveImage) return;
 
-        requestAnimationFrame(() => {
+
+        setTimeout(() => {
+            if (
+                !imageRef.current.complete ||
+                imageRef.current.naturalWidth === 0 ||
+                imageRef.current.naturalHeight === 0
+            ) {
+                console.error(" 'Not Found'.");
+                return;
+            }
+
             const gl = canvas.getContext("webgl");
             if (!gl) return;
 
             const width = canvas.width;
             const height = canvas.height;
-
             const pixels = new Uint8Array(width * height * 4);
             gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 
@@ -342,6 +355,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
                 }
             }
 
+
             const tempCanvas = document.createElement("canvas");
             tempCanvas.width = width;
             tempCanvas.height = height;
@@ -351,16 +365,17 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
             const imageData = new ImageData(new Uint8ClampedArray(flippedPixels), width, height);
             ctx.putImageData(imageData, 0, 0);
 
+
             tempCanvas.toBlob(blob => {
                 if (blob) {
                     console.log("📸 Image saved!");
                     const file = new File([blob], "filtered-image.png", { type: "image/png" });
-                   // const imUrl = URL.createObjectURL(file);
-                    // setSavedImage(imUrl);
+                    const imUrl = URL.createObjectURL(file);
+                    setSavedImage(imUrl);
                     saveImage(file);
                 }
             }, "image/png");
-        });
+        }, 100);
     }, [
         filter,
         debouncedBrightness,
@@ -377,12 +392,23 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
         debouncedIntensity,
     ]);
 
+
+
+    console.log(savedImage)
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%', ...styles }}>
-            <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
-            {/*{saveImage && (*/}
-            {/*    <img src={savedImage ?? undefined} alt="Saved preview" style={{ width: '200px' }} />*/}
-            {/*)}*/}
+
+            <canvas
+                ref={canvasRef}
+                style={preview ? { display: 'none' } : { width: '100%', height: '100%' }}
+            />
+            {preview && (
+                savedImage ? (
+                    <img src={savedImage} alt="Saved preview" style={{ width: '100%', height: '100%' }} />
+                ) : (
+                    <div>Загрузка превью...</div>
+                )
+            )}
         </div>
     );
 };
