@@ -300,6 +300,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
                 imageRef.current
             );
             gl.drawArrays(gl.TRIANGLES, 0, 6);
+
         };
 
     }, [
@@ -396,15 +397,15 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
 
     console.log(savedImage)
     return (
-        <div style={{ position: 'relative', width: '100%', height: '100%', ...styles }}>
+        <div style={{ position: 'absolute', width: '100%', height: '100%',overflow: 'hidden', ...styles }}>
 
             <canvas
                 ref={canvasRef}
-                style={preview ? { display: 'none' } : { width: '100%', height: '100%' }}
+                style={preview ? { display: 'none' } : { width: '100%', height: '100%',position: 'relative', top: 0, left: 0, right: 0, bottom: 0 }}
             />
             {preview && (
                 savedImage ? (
-                    <img src={savedImage} alt="Saved preview" style={{ width: '100%', height: '100%' }} />
+                    <img src={savedImage} alt="Saved preview" style={{ width: '100%', height: '100%',position: 'relative', top: 0, left: 0, right: 0, bottom: 0  }} />
                 ) : (
                     <div>Загрузка превью...</div>
                 )
