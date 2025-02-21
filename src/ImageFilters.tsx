@@ -1,8 +1,8 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { predefinedFilters } from './helpers/filters';
 import { useDebounce } from './hooks/useDebounce';
-import { multiplyColorMatrices } from "./hooks/matrixUtils";
-
+import {convert4x4to4x5, multiplyColorMatrices} from "./hooks/matrixUtils";
+import { v4 as uuidv4 } from 'uuid';
 export type FilterProps = {
     imageUrl: string;
     filter?: string;
@@ -44,7 +44,8 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
                                                  }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement>(new Image());
-    const [savedImage, setSavedImage] = useState<string | null>(null);
+   // const [savedImage, setSavedImage] = useState<string | null>(null);
+    const filterId = `filter-${uuidv4()}`;
 
     // Debounce the values
     const debouncedBrightness = useDebounce(brightness, 300);
@@ -371,8 +372,8 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
                 if (blob) {
                     console.log("📸 Image saved!");
                     const file = new File([blob], "filtered-image.png", { type: "image/png" });
-                    const imUrl = URL.createObjectURL(file);
-                    setSavedImage(imUrl);
+                    //const imUrl = URL.createObjectURL(file);
+                   // setSavedImage(imUrl);
                     saveImage(file);
                 }
             }, "image/png");
@@ -394,48 +395,42 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     ]);
 
 
+    const previewFilters = `brightness(${finalBrightness*100}%) 
+    contrast(${finalContrast*100}%) 
+    saturate(${finalSaturation*100}%)
+     hue-rotate(${((finalHue/Math.PI)*180)-40}deg)`;
+    const previewMatrix = convert4x4to4x5(finalMatrix);
 
-    console.log(savedImage)
-    return (
-        <div style={{ position: 'relative', width: '100%', height: '100%',overflow: 'hidden', ...styles }}>
-            {!savedImage && <canvas
-                ref={canvasRef}
-                style={preview ? {display: 'none'} : {
-                    width: '100%',
-                    height: '100%',
-                    position: 'relative',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0
-                }}
-            />}
-            {!preview && <canvas
-                ref={canvasRef}
-                style={preview ? {display: 'none'} : {
-                    width: '100%',
-                    height: '100%',
-                    position: 'relative',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0
-                }}
-            />}
-
-
-            {preview && (
-                savedImage ? (
-                    <img src={savedImage} alt="Saved preview" style={{
+    if (preview) {
+        return (
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                <svg width="1" height="1">
+                    <filter id={filterId} colorInterpolationFilters="sRGB" >
+                        <feColorMatrix type="matrix"  values={previewMatrix}/>
+                    </filter>
+                </svg>
+                <img
+                    crossOrigin="anonymous"
+                    key={filterId}
+                    src={imageUrl}
+                    alt="Filtered"
+                    style={{
+                        filter: `url(#${filterId}) ${previewFilters}`,
                         width: '100%',
                         height: '100%',
-                        position: 'relative',
-                        top: 0,
-                        left: 0, right: 0, bottom: 0  }} />
-                ) : (
-                    <div>Loading...</div>
-                )
-            )}
+                        ...styles,
+                    }}
+                />
+            </div>
+        );}
+
+
+    return (
+        <div style={{ position: 'absolute', width: '100%', height: '100%',overflow: 'hidden', ...styles }}>
+            <canvas
+                ref={canvasRef}
+                style={preview ? { display: 'none' } : { width: '100%', height: '100%',position: 'relative', top: 0, left: 0, right: 0, bottom: 0 }}
+            />
         </div>
     );
 };

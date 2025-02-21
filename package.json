@@ -83,7 +83,8 @@
     "postcss": "^8.4.49",
     "react-is": "^18.3.1",
     "rollup-plugin-postcss": "^4.0.2",
-    "uuid": "^11.0.5"
+    "uuid": "^11.0.5",
+    "uuidv4": "^6.2.13"
   },
   "repository": {
     "type": "git",
