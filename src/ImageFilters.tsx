@@ -71,7 +71,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     const finalBrightness = (predefinedFilterObj.brightness ?? 1) * (brightness / 100);
     const finalContrast = (predefinedFilterObj.contrast ?? 1) * (contrast / 100);
     const finalSaturation = (predefinedFilterObj.saturate ?? 1) * (saturation / 100);
-    const finalHue = (((predefinedFilterObj.hueRotate ?? 0) + hueRotate) * Math.PI) / 180;
+    const finalHue = ((predefinedFilterObj.hueRotate ?? 0) + hueRotate) / 360
     const finalVignette = vignette / 100;
     const u_shadows = shadows / 100;
     const u_grainIntensity = grain / 100;
@@ -137,14 +137,58 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
         yiq.x - 1.106 * yiq.y + 1.703 * yiq.z
       );
     }
-    vec3 adjustHue(vec3 color, float hue) {
-      vec3 yiq = rgb2yiq(color);
-      float cosHue = cos(hue);
-      float sinHue = sin(hue);
-      float i = yiq.y * cosHue - yiq.z * sinHue;
-      float q = yiq.y * sinHue + yiq.z * cosHue;
-      return yiq2rgb(vec3(yiq.x, i, q));
-    }
+
+vec3 rgb2hsl(vec3 color) {
+  float maxC = max(color.r, max(color.g, color.b));
+  float minC = min(color.r, min(color.g, color.b));
+  float delta = maxC - minC;
+  float h = 0.0;
+  float s = 0.0;
+  float l = (maxC + minC) / 2.0;
+  
+  if (delta != 0.0) {
+    s = l < 0.5 ? (delta / (maxC + minC)) : (delta / (2.0 - maxC - minC));
+    if (maxC == color.r)
+      h = (color.g - color.b) / delta + (color.g < color.b ? 6.0 : 0.0);
+    else if (maxC == color.g)
+      h = (color.b - color.r) / delta + 2.0;
+    else
+      h = (color.r - color.g) / delta + 4.0;
+    h /= 6.0;
+  }
+  return vec3(h, s, l);
+}
+
+float hue2rgb(float p, float q, float t) {
+  if (t < 0.0) t += 1.0;
+  if (t > 1.0) t -= 1.0;
+  if (t < 1.0/6.0) return p + (q - p) * 6.0 * t;
+  if (t < 1.0/2.0) return q;
+  if (t < 2.0/3.0) return p + (q - p) * (2.0/3.0 - t) * 6.0;
+  return p;
+}
+
+
+vec3 hsl2rgb(vec3 hsl) {
+  float r, g, b;
+  if (hsl.y == 0.0) {
+    r = g = b = hsl.z;
+  } else {
+    float q = hsl.z < 0.5 ? hsl.z * (1.0 + hsl.y) : hsl.z + hsl.y - hsl.z * hsl.y;
+    float p = 2.0 * hsl.z - q;
+    r = hue2rgb(p, q, hsl.x + 1.0/3.0);
+    g = hue2rgb(p, q, hsl.x);
+    b = hue2rgb(p, q, hsl.x - 1.0/3.0);
+  }
+  return vec3(r, g, b);
+}
+
+
+vec3 adjustHueHSL(vec3 color, float hueRotation) {
+  vec3 hsl = rgb2hsl(color);
+  hsl.x = mod(hsl.x + hueRotation, 1.0);
+  return hsl2rgb(hsl);
+}
     float random(vec2 st) {
       return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453);
     }
@@ -159,8 +203,8 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
       color.rgb *= u_brightness;
       color.rgb = ((color.rgb - 0.5) * u_contrast) + 0.5;
       float gray = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
-      color.rgb = mix(vec3(gray), color.rgb, u_saturation);
-      color.rgb = adjustHue(color.rgb, u_hue);
+       color.rgb = mix(vec3(gray), color.rgb, u_saturation);
+      color.rgb = adjustHueHSL(color.rgb, u_hue);
       float dist = distance(v_texCoord, vec2(0.5, 0.5));
       float vig = smoothstep(0.5, 1.0, dist);
       color.rgb = mix(color.rgb, color.rgb * (1.0 - vig), u_vignette);
@@ -188,7 +232,6 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
 
     useEffect(() => {
         const canvas = canvasRef.current;
-        console.log('filter')
         if (!canvas) return;
         const gl = canvas.getContext("webgl");
         if (!gl) {
@@ -398,7 +441,8 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     const previewFilters = `brightness(${finalBrightness*100}%) 
     contrast(${finalContrast*100}%) 
     saturate(${finalSaturation*100}%)
-     hue-rotate(${((finalHue/Math.PI)*180)-40}deg)`;
+     hue-rotate(${finalHue*360}deg)`;
+    console.log(previewFilters)
     const previewMatrix = convert4x4to4x5(finalMatrix);
 
     if (preview) {

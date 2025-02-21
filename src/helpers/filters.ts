@@ -11,8 +11,6 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
 
     grayscale: { saturate: 0 },
 
-    sepia: { sepia: 1 },
-
     brightness: { brightness: 1.5 },
 
     contrast: { contrast: 2.0 },
@@ -49,7 +47,7 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         brightness: 0.99,
         contrast: 1.03,
         saturate: 0.91,
-        hueRotate: 381,
+        hueRotate: 334,
         colorMatrix: new Float32Array([
             0.6, 0,   0,   0,
             0,   0.8, 0,   0,
@@ -62,11 +60,11 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
 
     pastel: { saturate: 1.2, brightness: 1.1, hueRotate: -20 },
 
-    mutedSepia: { sepia: 0.4, brightness: 0.9, contrast: 1.05 },
+    mutedSepia: { brightness: 0.9, contrast: 1.05 },
 
     moody: { brightness: 0.8, contrast: 0.9, saturate: 0.5 },
 
-    goldenHour: { sepia: 0.2, brightness: 1.2, contrast: 1.1, hueRotate: 25 },
+    goldenHour: { brightness: 1.2, contrast: 1.1, hueRotate: 25 },
 
     oceanBreeze: { saturate: 1.4, hueRotate: -50, brightness: 1.1 },
 
@@ -78,7 +76,7 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
 
     nightVibes: { brightness: 0.7, contrast: 1.3, saturate: 0.9, hueRotate: -10 },
 
-    vintageFilm: { sepia: 0.6, contrast: 0.9, brightness: 0.85, saturate: 0.8 },
+    vintageFilm: { contrast: 0.9, brightness: 0.85, saturate: 0.8 },
 
     deepBlue: {
         colorMatrix: new Float32Array([
