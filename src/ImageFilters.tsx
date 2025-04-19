@@ -44,8 +44,10 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
                                                  }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement>(new Image());
-   // const [savedImage, setSavedImage] = useState<string | null>(null);
+  //  const [savedImage, setSavedImage] = useState<string | null>(null);
     const filterId = `filter-${uuidv4()}`;
+
+   
 
     // Debounce the values
     const debouncedBrightness = useDebounce(brightness, 300);
@@ -233,7 +235,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const gl = canvas.getContext("webgl");
+        const gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
         if (!gl) {
             console.error("WebGL not supported");
             return;
@@ -383,7 +385,8 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 return;
             }
 
-            const gl = canvas.getContext("webgl");
+            const gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
+            console.log(canvas.toDataURL());
             if (!gl) return;
 
             const width = canvas.width;
@@ -415,8 +418,8 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 if (blob) {
                     console.log("📸 Image saved!");
                     const file = new File([blob], "filtered-image.png", { type: "image/png" });
-                    //const imUrl = URL.createObjectURL(file);
-                   // setSavedImage(imUrl);
+                  //  const imUrl = URL.createObjectURL(file);
+                  //  setSavedImage(imUrl);
                     saveImage(file);
                 }
             }, "image/png");
@@ -475,6 +478,14 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 ref={canvasRef}
                 style={preview ? { display: 'none' } : { width: '100%', height: '100%',position: 'relative', top: 0, left: 0, right: 0, bottom: 0 }}
             />
+            {/* {savedImage && (
+              
+                <img
+                    src={savedImage}
+                    alt="Saved"
+                    style={{ border: '1px solid red',   width: '100px', height: '100px', position: 'absolute', top:100, left: 0, right: 0, bottom: 0  }}
+                />
+            )} */}
         </div>
     );
 };
