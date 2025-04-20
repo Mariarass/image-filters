@@ -33,9 +33,9 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
                                                      contrast = 100,
                                                      saturation = 100,
                                                      hueRotate = 0,
-                                                     vignette = 0,
+                                                     vignette = 1,
                                                      shadows = 100,
-                                                     grain = 0,
+                                                     grain = 1,
                                                      intensity = 100,
                                                      sharpness = 0, // sharpness is disabled by default
                                                      saveImage,
@@ -74,9 +74,9 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     const finalContrast = (predefinedFilterObj.contrast ?? 1) * (contrast / 100);
     const finalSaturation = (predefinedFilterObj.saturate ?? 1) * (saturation / 100);
     const finalHue = ((predefinedFilterObj.hueRotate ?? 0) + hueRotate) / 360
-    const finalVignette = vignette / 100;
-    const u_shadows = shadows / 100;
-    const u_grainIntensity = grain / 100;
+    const finalShadows =(predefinedFilterObj.shadows ?? 1) * (debouncedShadows / 100);
+    const finalGrainIntensity = (predefinedFilterObj.grain ?? 1) * (debouncedGrain / 100);
+    const finalVignette = (predefinedFilterObj.vignette ?? 1) * (debouncedVignette / 100);
     const u_sharpness = sharpness / 100;
 
     // Calculate the final color matrix:
@@ -322,8 +322,8 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         gl.uniform1f(u_saturationLoc, finalSaturation);
         gl.uniform1f(u_hueLoc, finalHue);
         gl.uniform1f(u_vignetteLoc, finalVignette);
-        gl.uniform1f(u_shadowsLoc, u_shadows);
-        gl.uniform1f(u_grainIntensityLoc, u_grainIntensity);
+        gl.uniform1f(u_shadowsLoc, finalShadows);
+        gl.uniform1f(u_grainIntensityLoc, finalGrainIntensity);
         gl.uniform1f(u_sharpnessLoc, u_sharpness);
         gl.uniform1f(u_intensityLoc, intensityFactor);
 
@@ -362,6 +362,8 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         finalContrast,
         finalSaturation,
         finalHue,
+        finalShadows,
+        finalGrainIntensity,
         finalVignette,
         grain,
         sharpness,
@@ -386,7 +388,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
             }
 
             const gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
-            console.log(canvas.toDataURL());
+          
             if (!gl) return;
 
             const width = canvas.width;
@@ -438,6 +440,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         debouncedGrain,
         debouncedSharpness,
         debouncedIntensity,
+    
     ]);
 
 
@@ -445,7 +448,6 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
     contrast(${finalContrast*100}%) 
     saturate(${finalSaturation*100}%)
      hue-rotate(${finalHue*360}deg)`;
-    console.log(previewFilters)
     const previewMatrix = convert4x4to4x5(finalMatrix);
 
     if (preview) {

@@ -4,12 +4,47 @@ type PredefinedFilter = {
     saturate?: number;
     hueRotate?: number;
     sepia?: number;
+    shadows?: number;
+    grain?: number;
+    vignette?: number;
     colorMatrix?: Float32Array;
 };
 
 export const predefinedFilters: Record<string, PredefinedFilter> = {
 
     grayscale: { saturate: 0 },
+    tokyo:{
+        brightness: 1.03,       
+        contrast: 0.82,         
+        hueRotate: 355,        
+        saturate: 0.93,         
+        shadows: 1.02,          
+        grain:10,
+        vignette:5,
+        colorMatrix: new Float32Array([
+       
+            1.30,    0,      0,      0,    
+            0,      0.92,    0,      0,    
+            0,      0,      0.97,    0,   
+            0,      0,      0,      1,    
+          ]),
+    },
+    malibu:{
+        brightness: 0.98,       
+        contrast: 0.99,         
+        hueRotate: 1,        
+        saturate: 0.67,         
+        shadows: 1.79,          
+        grain:1,
+        vignette:1,
+        colorMatrix: new Float32Array([
+       
+            1.25,    0,      0,      0,    
+            0,      0.96,    0,      0,    
+            0,      0,      1,    0,   
+            0,      0,      0,      1,    
+          ]),
+    },
 
     brightness: { brightness: 1.5 },
 
