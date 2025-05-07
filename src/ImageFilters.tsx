@@ -75,7 +75,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     const finalSaturation = (predefinedFilterObj.saturate ?? 1) * (saturation / 100);
     const finalHue = ((predefinedFilterObj.hueRotate ?? 0) + hueRotate) / 360
     const finalShadows =(predefinedFilterObj.shadows ?? 1) * (shadows / 100);
-    const finalGrainIntensity = (predefinedFilterObj.grain ?? 1) + (grain / 100);
+    const finalGrainIntensity = (predefinedFilterObj.grain ?? 1) *(grain / 100);
     const finalVignette = (predefinedFilterObj.vignette ?? 1) + (vignette / 10);
     const u_sharpness = sharpness / 100;
 
