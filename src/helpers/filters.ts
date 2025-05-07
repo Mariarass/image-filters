@@ -19,8 +19,8 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         hueRotate: 355,        
         saturate: 0.93,         
         shadows: 1.02,          
-        grain:10,
-        vignette:5,
+        grain:0.3,
+        vignette:0.5,
         colorMatrix: new Float32Array([
        
             1.30,    0,      0,      0,    
@@ -35,8 +35,8 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         hueRotate: 1,        
         saturate: 0.67,         
         shadows: 1.79,          
-        grain:1,
-        vignette:1,
+        grain:0.1,
+        vignette:0.5,
         colorMatrix: new Float32Array([
        
             1.25,    0,      0,      0,    

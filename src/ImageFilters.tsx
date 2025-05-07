@@ -74,10 +74,12 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     const finalContrast = (predefinedFilterObj.contrast ?? 1) * (contrast / 100);
     const finalSaturation = (predefinedFilterObj.saturate ?? 1) * (saturation / 100);
     const finalHue = ((predefinedFilterObj.hueRotate ?? 0) + hueRotate) / 360
-    const finalShadows =(predefinedFilterObj.shadows ?? 1) * (debouncedShadows / 100);
-    const finalGrainIntensity = (predefinedFilterObj.grain ?? 1) * (debouncedGrain / 100);
-    const finalVignette = (predefinedFilterObj.vignette ?? 1) * (debouncedVignette / 100);
+    const finalShadows =(predefinedFilterObj.shadows ?? 1) * (shadows / 100);
+    const finalGrainIntensity = (predefinedFilterObj.grain ?? 1) + (grain / 100);
+    const finalVignette = (predefinedFilterObj.vignette ?? 1) + (vignette / 10);
     const u_sharpness = sharpness / 100;
+
+    console.log('finalGrainIntensity',finalVignette);
 
     // Calculate the final color matrix:
     // If the filter has a colorMatrix, combine it with the user matrix.
@@ -365,7 +367,6 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         finalShadows,
         finalGrainIntensity,
         finalVignette,
-        grain,
         sharpness,
         intensity,
         filter,
@@ -373,6 +374,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
 
     // Save the image if a saveImage function is provided
     useEffect(() => {
+      console.log('saveImage',saveImage);
         const canvas = canvasRef.current;
         if (!canvas || !saveImage) return;
 
