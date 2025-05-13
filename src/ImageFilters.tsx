@@ -252,9 +252,14 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
       float gray = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
       color.rgb = mix(vec3(gray), color.rgb, u_saturation);
       
-      vec3 userHueColor = adjustHueHSL(color.rgb, u_hue);
-      vec3 presetHueColor = adjustHueHSL(color.rgb, u_presetHue);
-      color.rgb = mix(userHueColor, presetHueColor, u_intensity);
+      // Always apply user hue first
+      color.rgb = adjustHueHSL(color.rgb, u_hue);
+      
+      // If there's a preset hue, apply it with intensity
+      if (u_presetHue != 0.0) {
+        vec3 presetHueColor = adjustHueHSL(color.rgb, u_presetHue);
+        color.rgb = mix(color.rgb, presetHueColor, u_intensity);
+      }
       
       float dist = distance(v_texCoord, vec2(0.5, 0.5));
       float vig = smoothstep(0.5, 1.0, dist);
