@@ -16,7 +16,7 @@ export type FilterProps = {
     vignette?: number;
     shadows?: number;
     grain?: number;
-    intensity?: number;
+    filterIntensity?: number;
     sharpness?: number;
     styles?: React.CSSProperties;
     saveImage?: (file: File) => void;
@@ -35,9 +35,9 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
                                                      hueRotate = 0,
                                                      vignette = 1,
                                                      shadows = 100,
-                                                     grain = 1,
-                                                     intensity = 100,
-                                                     sharpness = 0, // sharpness is disabled by default
+                                                     grain = 1, 
+                                                     filterIntensity = 100,
+                                                     sharpness = 0,
                                                      saveImage,
                                                      styles,
                                                      preview
@@ -61,25 +61,50 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     const debouncedVignette = useDebounce(vignette ?? 0, 300);
     const debouncedGrain = useDebounce(grain ?? 0, 300);
     const debouncedSharpness = useDebounce(sharpness ?? 0, 300);
-    const debouncedIntensity = useDebounce(intensity ?? 100, 300);
+    const debouncedFilterIntensity = useDebounce(filterIntensity ?? 100, 300);
 
     // Get the predefined filter settings if available
     const predefinedFilterObj =
         filter && predefinedFilters[filter] ? predefinedFilters[filter] : {};
 
+    const fi = (filterIntensity ?? 0) / 100;
+    
     // Calculate the final parameter values.
-    // For example, the final brightness is computed as:
-    // finalBrightness = predefinedBrightness * (brightness / 100)
-    const finalBrightness = (predefinedFilterObj.brightness ?? 1) * (brightness / 100);
-    const finalContrast = (predefinedFilterObj.contrast ?? 1) * (contrast / 100);
-    const finalSaturation = (predefinedFilterObj.saturate ?? 1) * (saturation / 100);
-    const finalHue = ((predefinedFilterObj.hueRotate ?? 0) + hueRotate) / 360
-    const finalShadows =(predefinedFilterObj.shadows ?? 1) * (shadows / 100);
-    const finalGrainIntensity = (predefinedFilterObj.grain ?? 1) *(grain / 100);
-    const finalVignette = (predefinedFilterObj.vignette ?? 1) + (vignette / 10);
-    const u_sharpness = sharpness / 100;
+    // User parameters are applied directly
+    const userBrightness = brightness / 100;
+    const userContrast = contrast / 100;
+    const userSaturation = saturation / 100;
+    const userHue = hueRotate / 360;
+    const userShadows = shadows / 100;
+    const userGrain = grain / 100;
+    const userVignette = vignette / 10;
+    const userSharpness = sharpness / 100;
 
-    console.log('finalGrainIntensity',finalVignette);
+    // Apply filter intensity only to preset filter parameters
+    const presetBrightness = predefinedFilterObj.brightness ?? 1;
+    const presetContrast = predefinedFilterObj.contrast ?? 1;
+    const presetSaturation = predefinedFilterObj.saturate ?? 1;
+    const presetHue = predefinedFilterObj.hueRotate ?? 0;
+    const presetShadows = predefinedFilterObj.shadows ?? 1;
+    const presetVignette = predefinedFilterObj.vignette ?? 1;
+
+    // Mix preset filter parameters with neutral values based on intensity
+    const adjustedPresetBrightness = Math.max(0, 1 + (presetBrightness - 1) * fi);
+    const adjustedPresetContrast = 1 + (presetContrast - 1) * fi;
+    const adjustedPresetSaturation = 1 + (presetSaturation - 1) * fi;
+    const presetHueValue = presetHue / 360;
+    const adjustedPresetShadows = 1 + (presetShadows - 1) * fi;
+    const adjustedPresetVignette = presetVignette * fi;
+
+    // Combine user parameters with adjusted preset parameters
+    const finalBrightness = Math.min(2, userBrightness * adjustedPresetBrightness);
+    const finalContrast = userContrast * adjustedPresetContrast;
+    const finalSaturation = userSaturation * adjustedPresetSaturation;
+    const finalHue = userHue;
+    const finalShadows = userShadows * adjustedPresetShadows;
+    const finalGrainIntensity = userGrain;
+    const finalVignette = userVignette + adjustedPresetVignette;
+    const u_sharpness = userSharpness;
 
     // Calculate the final color matrix:
     // If the filter has a colorMatrix, combine it with the user matrix.
@@ -91,13 +116,25 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     ]);
     let finalMatrix = userMatrix;
     if (predefinedFilterObj.colorMatrix) {
-        finalMatrix = multiplyColorMatrices(predefinedFilterObj.colorMatrix, userMatrix);
+        // Create identity matrix for blending
+        const identityMatrix = new Float32Array([
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1,
+        ]);
+        // Blend filter matrix with identity matrix based on intensity
+        const mixedMatrix = new Float32Array(16);
+        for (let i = 0; i < 16; i++) {
+            mixedMatrix[i] = identityMatrix[i] + (predefinedFilterObj.colorMatrix[i] - identityMatrix[i]) * fi;
+        }
+        finalMatrix = multiplyColorMatrices(mixedMatrix, userMatrix);
     }
     const u_colorMatrix = new Float32Array(finalMatrix);
     const u_bias = new Float32Array([0, 0, 0, 0]);
 
-    // The filter opacity: if intensity = 100, the full effect is applied; if 0, only the original is used.
-    const intensityFactor = (intensity ?? 100) / 100;
+    // The filter opacity is now always 1.0 since we apply intensity to each preset parameter separately
+
 
     const vertexShaderSource = `
     attribute vec2 a_position;
@@ -110,7 +147,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
   `;
 
     const fragmentShaderSource = `
-    precision mediump float;
+    precision highp float;
     uniform sampler2D u_image;
     uniform mat4 u_colorMatrix;
     uniform vec4 u_bias;
@@ -118,12 +155,13 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     uniform float u_contrast;
     uniform float u_saturation;
     uniform float u_hue;
+    uniform float u_presetHue;
+    uniform float u_intensity;
     uniform float u_vignette;
     uniform float u_shadows;
     uniform float u_grainIntensity;
     uniform float u_sharpness;
     uniform vec2 u_resolution;
-    uniform float u_intensity;  // filter opacity (0..1)
     varying vec2 v_texCoord;
 
     // Functions for color operations
@@ -201,23 +239,33 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
       // Get the original pixel color
       vec4 origColor = texture2D(u_image, v_texCoord);
       
-      // Apply the filter to a copy of the original color
-      vec4 color = origColor;
-      color = u_colorMatrix * color + u_bias;
-      color.rgb *= u_brightness;
+      // First apply the preset filter with intensity
+      vec4 filteredColor = origColor;
+      filteredColor = u_colorMatrix * filteredColor + u_bias;
+      
+      // Mix the original color with the filtered color using u_intensity
+      vec4 color = mix(origColor, filteredColor, u_intensity);
+      
+      // Then apply all other adjustments to the mixed result
+      color.rgb = clamp(color.rgb * u_brightness, 0.0, 1.0);
       color.rgb = ((color.rgb - 0.5) * u_contrast) + 0.5;
       float gray = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
-       color.rgb = mix(vec3(gray), color.rgb, u_saturation);
-      color.rgb = adjustHueHSL(color.rgb, u_hue);
+      color.rgb = mix(vec3(gray), color.rgb, u_saturation);
+      
+      vec3 userHueColor = adjustHueHSL(color.rgb, u_hue);
+      vec3 presetHueColor = adjustHueHSL(color.rgb, u_presetHue);
+      color.rgb = mix(userHueColor, presetHueColor, u_intensity);
+      
       float dist = distance(v_texCoord, vec2(0.5, 0.5));
       float vig = smoothstep(0.5, 1.0, dist);
       color.rgb = mix(color.rgb, color.rgb * (1.0 - vig), u_vignette);
+      
       float lum = dot(color.rgb, vec3(0.299, 0.587, 0.114));
       float shadowFactor = mix(u_shadows, 1.0, smoothstep(0.0, 0.5, lum));
       color.rgb *= shadowFactor;
       
-      float noise = random(v_texCoord);
-      color.rgb += (noise - 0.5) * u_grainIntensity;
+      float noise = (random(v_texCoord) - 0.5) * (u_grainIntensity / max(u_brightness, 0.1));
+      color.rgb = clamp(color.rgb + noise, 0.0, 1.0);
       
       if (u_sharpness > 0.0) {
         vec2 texel = 1.0 / u_resolution;
@@ -229,12 +277,13 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         color = clamp(sharpened, 0.0, 1.0);
       }
       
-      // Final result: mix the original color with the filtered color using u_intensity
-      gl_FragColor = mix(origColor, color, u_intensity);
+      color.rgb = clamp(color.rgb, 0.0, 1.0);
+      gl_FragColor = color;
     }
   `;
 
     useEffect(() => {
+      console.log('useEffect');
         const canvas = canvasRef.current;
         if (!canvas) return;
         const gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
@@ -307,27 +356,29 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         // Set uniforms
         const u_colorMatrixLoc = gl.getUniformLocation(program, "u_colorMatrix");
         const u_biasLoc = gl.getUniformLocation(program, "u_bias");
-        gl.uniformMatrix4fv(u_colorMatrixLoc, false, u_colorMatrix);
-        gl.uniform4fv(u_biasLoc, u_bias);
-
         const u_brightnessLoc = gl.getUniformLocation(program, "u_brightness");
         const u_contrastLoc = gl.getUniformLocation(program, "u_contrast");
         const u_saturationLoc = gl.getUniformLocation(program, "u_saturation");
         const u_hueLoc = gl.getUniformLocation(program, "u_hue");
+        const u_presetHueLoc = gl.getUniformLocation(program, "u_presetHue");
         const u_vignetteLoc = gl.getUniformLocation(program, "u_vignette");
         const u_shadowsLoc = gl.getUniformLocation(program, "u_shadows");
         const u_grainIntensityLoc = gl.getUniformLocation(program, "u_grainIntensity");
         const u_sharpnessLoc = gl.getUniformLocation(program, "u_sharpness");
         const u_intensityLoc = gl.getUniformLocation(program, "u_intensity");
+
+        gl.uniformMatrix4fv(u_colorMatrixLoc, false, u_colorMatrix);
+        gl.uniform4fv(u_biasLoc, u_bias);
         gl.uniform1f(u_brightnessLoc, finalBrightness);
         gl.uniform1f(u_contrastLoc, finalContrast);
         gl.uniform1f(u_saturationLoc, finalSaturation);
         gl.uniform1f(u_hueLoc, finalHue);
+        gl.uniform1f(u_presetHueLoc, presetHueValue);
         gl.uniform1f(u_vignetteLoc, finalVignette);
         gl.uniform1f(u_shadowsLoc, finalShadows);
         gl.uniform1f(u_grainIntensityLoc, finalGrainIntensity);
         gl.uniform1f(u_sharpnessLoc, u_sharpness);
-        gl.uniform1f(u_intensityLoc, intensityFactor);
+        gl.uniform1f(u_intensityLoc, fi);
 
         const u_resolutionLoc = gl.getUniformLocation(program, "u_resolution");
 
@@ -367,8 +418,8 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         finalShadows,
         finalGrainIntensity,
         finalVignette,
-        sharpness,
-        intensity,
+        u_sharpness,
+        filterIntensity,
         filter,
     ]);
 
@@ -441,7 +492,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         debouncedVignette,
         debouncedGrain,
         debouncedSharpness,
-        debouncedIntensity,
+        debouncedFilterIntensity,
     
     ]);
 
@@ -480,7 +531,9 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         <div style={{ position: 'absolute', width: '100%', height: '100%',overflow: 'hidden', ...styles }}>
             <canvas
                 ref={canvasRef}
-                style={preview ? { display: 'none' } : { width: '100%', height: '100%',position: 'relative', top: 0, left: 0, right: 0, bottom: 0 }}
+                style={preview ? { display: 'none' } : { width: '100%', height: '100%',position: 'relative',
+                  objectFit: 'cover',
+                  top: 0, left: 0, right: 0, bottom: 0 }}
             />
             {/* {savedImage && (
               

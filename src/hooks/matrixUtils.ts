@@ -23,12 +23,12 @@ export  function convert4x4to4x5(matrix4x4: Float32Array): string {
     }
     const matrix4x5: number[] = [];
     for (let row = 0; row < 4; row++) {
-        // Копируем 4 элемента из строки
-        matrix4x5.push(matrix4x4[row * 4]);     // первый элемент строки
-        matrix4x5.push(matrix4x4[row * 4 + 1]);   // второй элемент строки
-        matrix4x5.push(matrix4x4[row * 4 + 2]);   // третий элемент строки
-        matrix4x5.push(matrix4x4[row * 4 + 3]);   // четвертый элемент строки
-        // Добавляем bias для данной строки (обычно 0)
+        // Copy 4 elements from the row
+        matrix4x5.push(matrix4x4[row * 4]);     // first element of the row
+        matrix4x5.push(matrix4x4[row * 4 + 1]);   // second element of the row
+        matrix4x5.push(matrix4x4[row * 4 + 2]);   // third element of the row
+        matrix4x5.push(matrix4x4[row * 4 + 3]);   // fourth element of the row
+        // Add bias for this row (usually 0)
         matrix4x5.push(0);
     }
     return matrix4x5.join(' ');
