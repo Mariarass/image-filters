@@ -8,19 +8,22 @@ type PredefinedFilter = {
     grain?: number;
     vignette?: number;
     colorMatrix?: Float32Array;
+    highlights?: number;
+    black?: number;
+    white?: number;
 };
 
 export const predefinedFilters: Record<string, PredefinedFilter> = {
 
     grayscale: { saturate: 0 },
     tokyo:{
-        brightness: 1.03,       
-        contrast: 0.82,         
+        brightness: 3,       
+        contrast: -18,         
         hueRotate: 355,        
-        saturate: 1.17,         
-        shadows: 1.02,          
-        grain:0.3,
-        vignette:0.5,
+        saturate: 17,         
+        shadows: 2,          
+        grain:30,
+        vignette:50,
         colorMatrix: new Float32Array([
        
             1.30,    0,      0,      0,    
@@ -30,13 +33,13 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
           ]),
     },
     malibu:{
-        brightness: 0.98,       
-        contrast: 0.99,         
+        brightness: -2,       
+        contrast: -1,         
         hueRotate: 1,        
-        saturate: 0.67,         
-        shadows: 1.79,          
-        grain:0.1,
-        vignette:0.5,
+        saturate: -33,         
+        shadows: 79,          
+        grain:10,
+        vignette:50,
         colorMatrix: new Float32Array([
        
             1.25,    0,      0,      0,    
@@ -85,8 +88,8 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
       },
     phoenix: { saturate: 1.2, brightness: 1.1, hueRotate: -20 },
     jerusalem:{
-        brightness: 1.06,       
-        contrast: 1.02,         
+        brightness: 6,       
+        contrast: 2,         
         hueRotate: 1,        
         saturate: 1.01,         
         shadows: 1.86,          
@@ -101,13 +104,13 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
           ]),
     },
     havana:{
-        brightness: 1,       
-        contrast:1,         
+        brightness: 0,       
+        contrast:0,         
         hueRotate: 360,        
-        saturate: 0.67,         
-        shadows: 1.79,          
-        grain:0.1,
-        vignette:0.5,
+        saturate: -33,         
+        shadows: 79,          
+        grain:10,
+        vignette:50,
         colorMatrix: new Float32Array([
        
             1.25,    0,      0,      0,    
@@ -125,13 +128,13 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         ]),
     },
     silberian: {
-        brightness: 1.00,
-        contrast: 0.97,
+        brightness: 0,
+        contrast: -3,
         hueRotate: 0,
-        saturate: 0.78,
-        shadows: 0.67,
-        grain: 0.00,
-        vignette: 0.00,
+        saturate: -22,
+        shadows: -33,
+        grain: 0,
+        vignette: 0,
         colorMatrix: new Float32Array([
           0.80, 0,           0,           0,
           0,           0.80, 0,           0,
@@ -140,13 +143,13 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         ]),
       },
       oslo: {
-        brightness: 1.08,
-        contrast: 0.97,
+        brightness: 8,
+        contrast: -3,
         hueRotate: 2,
-        saturate: 0.78,
-        shadows: 1.84,
-        grain: 0.04,
-        vignette: 0.10,
+        saturate: -22,
+        shadows: 84,
+        grain: 4,
+        vignette: 10,
         colorMatrix: new Float32Array([
           0.70, 0,           0,           0,
           0,           0.90, 0,           0,
@@ -155,13 +158,13 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         ]),
       },
       icelandic: {
-        brightness: 1.11,
-        contrast: 1.04,
+        brightness: 11,
+        contrast: 4,
         hueRotate: 2,
-        saturate: 0.35,
-        shadows: 1.64,
-        grain: 0.05,
-        vignette: 0.10,
+        saturate: -65,
+        shadows: 64,
+        grain: 5,
+        vignette: 10,
         colorMatrix: new Float32Array([
           0.70, 0,           0,           0,
           0,           0.70, 0,           0,
@@ -170,13 +173,13 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         ]),
       },
       glacier: {
-        brightness: 0.94,
-        contrast: 1.14,
+        brightness: -6,
+        contrast: 14,
         hueRotate: 331,
-        saturate: 0.46,
-        shadows: 2.00,
-        grain: 0.05,
-        vignette: 0.10,
+        saturate: -54,
+        shadows: 100,
+        grain: 5,
+        vignette: 10,
         colorMatrix: new Float32Array([
           0.80, 0,           0,           0,
           0,           0.90, 0,           0,
@@ -185,13 +188,13 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         ]),
       },
     aurora:{
-        brightness: 0.90,       
-        contrast: 0.84,         
+        brightness: -10,       
+        contrast: -16,         
         hueRotate: 1,        
-        saturate: 1.14,         
-        shadows: 0.80,          
-        grain:0.1,
-        vignette:0.5,
+        saturate: 14,         
+        shadows: -20,          
+        grain:10,
+        vignette:50,
         colorMatrix: new Float32Array([
        
             0.83,    0,      0,      0,    
@@ -202,13 +205,13 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
     },
 
     alpine: {
-        brightness: 0.94,
-        contrast: 1.08,
+        brightness: -6,
+        contrast: 8,
         hueRotate: 319,
-        saturate: 0.56,
-        shadows: 1.57,
-        grain: 0.00,
-        vignette: 0.10,
+        saturate: -44,
+        shadows: 57,
+        grain: 0,
+        vignette: 10,
         colorMatrix: new Float32Array([
           0.80, 0,           0,           0,
           0,           0.70, 0,           0,
@@ -218,13 +221,13 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
       },
 
       antarctic: {
-        brightness: 0.80,
-        contrast: 1.11,
+        brightness: -20,
+        contrast: 11,
         hueRotate: 331,
-        saturate: 0.63,
-        shadows: 1.57,
-        grain: 0.00,
-        vignette: 0.00,
+        saturate: -37,
+        shadows: 57,
+        grain: 0,
+        vignette: 0,
         colorMatrix: new Float32Array([
           0.90, 0,           0,           0,
           0,           1.10, 0,           0,
@@ -232,21 +235,21 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
           0,           0,           0,           1,
         ]),
       },
-    brightness: { brightness: 1.5 },
+    brightness: { brightness: 50 },
 
-    contrast: { contrast: 2.0 },
+    contrast: { contrast: 100 },
 
-    saturate: { saturate: 2.0 },
+    saturate: { saturate: 100 },
 
     hue: { hueRotate: 90 },
 
-    vintage: { sepia: 0.5, contrast: 1.2, brightness: 0.9 },
+    vintage: { sepia: 50, contrast: 20, brightness: -10 },
 
-    cool: { hueRotate: 270, saturate: 1.5 },
+    cool: { hueRotate: 270, saturate: 50 },
 
     fancyEffect: {
-        brightness: 1.2,
-        contrast: 1.1,
+        brightness: 20,
+        contrast: 10,
         colorMatrix: new Float32Array([
             1.2, 0,   0,   0,
             0,   1.0, 0.5, 0,
@@ -265,9 +268,9 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
     },
 
     grove: {
-        brightness: 0.99,
-        contrast: 1.03,
-        saturate: 0.91,
+        brightness: -1,
+        contrast: 3,
+        saturate: -9,
         hueRotate: 334,
         colorMatrix: new Float32Array([
             0.6, 0,   0,   0,
@@ -277,13 +280,13 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         ]),
     },
     amazon: {
-        brightness: 1.00,
-        contrast: 1.00,
+        brightness: 0,
+        contrast: 0,
         hueRotate: 84,
-        saturate: 0.80,
-        shadows: 0.63,
-        grain: 0.09,
-        vignette: 0.00,
+        saturate: -20,
+        shadows: -37,
+        grain: 9,
+        vignette: 0,
         colorMatrix: new Float32Array([
           0.90, 0,           0,           0,
           0,           0.70, 0,           0,
@@ -292,13 +295,13 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         ]),
       },
       hallow: {
-        brightness: 1.31,
-        contrast: 0.76,
+        brightness: 31,
+        contrast: -24,
         hueRotate: 28,
-        saturate: 0.83,
-        shadows: 0.73,
-        grain: 0.06,
-        vignette: 0.00,
+        saturate: -17,
+        shadows: -27,
+        grain: 6,
+        vignette: 0,
         colorMatrix: new Float32Array([
           1.00, 0,           0,           0,
           0,           1.00, 0,           0,
@@ -307,13 +310,13 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         ]),
       },
       cedar: {
-        brightness: 1.31,
-        contrast: 0.77,
+        brightness: 31,
+        contrast: -23,
         hueRotate: 84,
-        saturate: 0.80,
-        shadows: 0.73,
-        grain: 0.06,
-        vignette: 0.00,
+        saturate: -20,
+        shadows: -27,
+        grain: 6,
+        vignette: 0,
         colorMatrix: new Float32Array([
           0.90, 0,           0,           0,
           0,           0.30, 0,           0,
@@ -322,13 +325,13 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         ]),
       },
       safari: {
-        brightness: 1.00,
-        contrast: 1.00,
+        brightness: 0,
+        contrast: 0,
         hueRotate: 321,
-        saturate: 1.00,
-        shadows: 1.00,
-        grain: 0.00,
-        vignette: 0.00,
+        saturate: 0,
+        shadows: 0,
+        grain: 0,
+        vignette: 0,
         colorMatrix: new Float32Array([
           1.10, 0,           0,           0,
           0,           1.20, 0,           0,
@@ -337,13 +340,13 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         ]),
       },
       shade: {
-        brightness: 1.18,
-        contrast: 0.93,
+        brightness: 18,
+        contrast: -7,
         hueRotate: 327,
-        saturate: 0.87,
-        shadows: 0.57,
-        grain: 0.06,
-        vignette: 0.00,
+        saturate: -13,
+        shadows: -43,
+        grain: 6,
+        vignette: 0,
         colorMatrix: new Float32Array([
           1.20, 0,           0,           0,
           0,           1.10, 0,           0,
@@ -352,13 +355,13 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         ]),
       },
       desert: {
-        brightness: 1.18,
-        contrast: 0.80,
+        brightness: 18,
+        contrast: -20,
         hueRotate: 323,
-        saturate: 0.85,
-        shadows: 0.63,
-        grain: 0.06,
-        vignette: 0.00,
+        saturate: -15,
+        shadows: -37,
+        grain: 6,
+        vignette: 0,
         colorMatrix: new Float32Array([
           1.20, 0,           0,           0,
           0,           1.30, 0,           0,
@@ -367,27 +370,27 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         ]),
       },
 
-    retro: { saturate: 1.5, contrast: 0.85 },
+    retro: { saturate: 50, contrast: -15 },
 
    
 
-    mutedSepia: { brightness: 0.9, contrast: 1.05 },
+    mutedSepia: { brightness: -10, contrast: 5 },
 
-    moody: { brightness: 0.8, contrast: 0.9, saturate: 0.5 },
+    moody: { brightness: -20, contrast: -10, saturate: -50 },
 
-    goldenHour: { brightness: 1.2, contrast: 1.1, hueRotate: 25 },
+    goldenHour: { brightness: 20, contrast: 10, hueRotate: 25 },
 
-    oceanBreeze: { saturate: 1.4, hueRotate: -50, brightness: 1.1 },
+    oceanBreeze: { saturate: 40, hueRotate: -50, brightness: 10 },
 
-    cinematic: { contrast: 1.2, brightness: 0.9, sepia: 0.1 },
+    cinematic: { contrast: 20, brightness: -10, sepia: 10 },
 
-    noir: { saturate: 0, contrast: 1.2, brightness: 0.8 },
+    noir: { saturate: -100, contrast: 20, brightness: -20 },
 
-    rainforest: { brightness: 1.15, contrast: 1.05, hueRotate: 15 },
+    rainforest: { brightness: 15, contrast: 5, hueRotate: 15 },
 
-    nightVibes: { brightness: 0.7, contrast: 1.3, saturate: 0.9, hueRotate: -10 },
+    nightVibes: { brightness: -30, contrast: 30, saturate: -10, hueRotate: -10 },
 
-    vintageFilm: { contrast: 0.9, brightness: 0.85, saturate: 0.8 },
+    vintageFilm: { contrast: -10, brightness: -15, saturate: -20 },
 
 
 
@@ -484,4 +487,5 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
             0,   0,   0,   1,
         ]),
     },
+
 };
