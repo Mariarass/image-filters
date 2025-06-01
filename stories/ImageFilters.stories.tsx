@@ -26,5 +26,6 @@ export const Default = Template.bind({});
 
 Default.args = {
   saveImage:()=>{console.log('saveImage')},
+ 
   imageUrl: 'https://simpleecreate.com/images/rCfBiP7oGHVJOWMPHhY365ZGlWt3bjQGLXQq38bP.png',
 };

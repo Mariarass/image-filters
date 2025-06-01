@@ -22,6 +22,12 @@ export type FilterProps = {
     saveImage?: (file: File) => void;
     preview?: boolean;
     highlights?: number;
+    canvasColor?:{
+        r:number,
+        g:number,
+        b:number,
+        a:number
+    }
 
 };
 
@@ -44,7 +50,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
                                                      styles,
                                                      preview,
                                                      highlights = 0,
-                                                   
+                                                     canvasColor,
                                                  }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement>(new Image());
@@ -67,6 +73,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     const debouncedSharpness = useDebounce(sharpness ?? 0, 300);
     const debouncedFilterIntensity = useDebounce(filterIntensity ?? 100, 300);
     const debouncedHighlights = useDebounce(highlights, 300);
+    const debouncedCanvasColor = useDebounce(canvasColor, 300);
 
 
     // Get the predefined filter settings if available
@@ -175,6 +182,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     uniform float u_grainIntensity;
     uniform float u_sharpness;
     uniform float u_highlights;
+    uniform vec4 u_canvasColor;
 
     uniform vec2 u_resolution;
     varying vec2 v_texCoord;
@@ -299,6 +307,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
       }
       
       color.rgb = clamp(color.rgb, 0.0, 1.0);
+      color.rgb = mix(color.rgb, u_canvasColor.rgb, u_canvasColor.a);
       gl_FragColor = color;
     }
   `;
@@ -388,6 +397,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         const u_sharpnessLoc = gl.getUniformLocation(program, "u_sharpness");
         const u_intensityLoc = gl.getUniformLocation(program, "u_intensity");
         const u_highlightsLoc = gl.getUniformLocation(program, "u_highlights");
+        const u_canvasColorLoc = gl.getUniformLocation(program, "u_canvasColor");
 
 
         
@@ -404,6 +414,13 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         gl.uniform1f(u_sharpnessLoc, u_sharpness);
         gl.uniform1f(u_intensityLoc, fi);
         gl.uniform1f(u_highlightsLoc, finalHighlights);
+        gl.uniform4f(
+          u_canvasColorLoc,
+          (canvasColor?.r ?? 0) / 255,
+          (canvasColor?.g ?? 0) / 255,
+          (canvasColor?.b ?? 0) / 255,
+          (canvasColor?.a ?? 0) / 100
+        );
 
         const u_resolutionLoc = gl.getUniformLocation(program, "u_resolution");
 
@@ -447,7 +464,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         filterIntensity,
         filter,
         finalHighlights,
-       
+        canvasColor,
     ]);
 
     // Save the image if a saveImage function is provided
@@ -521,6 +538,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         debouncedSharpness,
         debouncedFilterIntensity,
         debouncedHighlights,  
+        debouncedCanvasColor,
      
     ]);
 
