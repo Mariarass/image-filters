@@ -189,6 +189,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     uniform float u_highlights;
     uniform vec4 u_canvasColor;
     uniform vec2 u_resolution;
+    uniform bool u_hasGradient;
     varying vec2 v_texCoord;
 
     // Functions for color operations
@@ -311,10 +312,12 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
       }
       
       color.rgb = clamp(color.rgb, 0.0, 1.0);
-      // --- Градиент поверх изображения, но под canvasColor ---
-      vec4 gradColor = texture2D(u_gradient, v_texCoord);
-      color.rgb = mix(color.rgb, gradColor.rgb, gradColor.a);
-      // --- canvasColor поверх ---
+
+      if (u_hasGradient) {
+        vec4 gradColor = texture2D(u_gradient, v_texCoord);
+        color.rgb = mix(color.rgb, gradColor.rgb, gradColor.a);
+      }
+     
       color.rgb = mix(color.rgb, u_canvasColor.rgb, u_canvasColor.a);
       gl_FragColor = color;
     }
@@ -473,6 +476,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 const u_intensityLoc = gl.getUniformLocation(program, "u_intensity");
                 const u_highlightsLoc = gl.getUniformLocation(program, "u_highlights");
                 const u_canvasColorLoc = gl.getUniformLocation(program, "u_canvasColor");
+                const u_hasGradientLoc = gl.getUniformLocation(program, "u_hasGradient");
                 gl.uniformMatrix4fv(u_colorMatrixLoc, false, u_colorMatrix);
                 gl.uniform4fv(u_biasLoc, u_bias);
                 gl.uniform1f(u_brightnessLoc, finalBrightness);
@@ -493,6 +497,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                   (canvasColor?.b ?? 0) / 255,
                   (canvasColor?.a ?? 0) / 100
                 );
+                gl.uniform1i(u_hasGradientLoc, gradient ? 1 : 0);
                 const u_resolutionLoc = gl.getUniformLocation(program, "u_resolution");
                 gl.uniform2f(u_resolutionLoc, width, height);
                 // Bind textures to samplers

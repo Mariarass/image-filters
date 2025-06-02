@@ -26,5 +26,11 @@ export const Default = Template.bind({});
 
 Default.args = {
   saveImage:()=>{console.log('saveImage')},
+  canvasColor:{
+    r:255,
+    g:255,
+    b:255,
+    a:100
+  },
   imageUrl: 'https://simpleecreate.com/images/rCfBiP7oGHVJOWMPHhY365ZGlWt3bjQGLXQq38bP.png',
 };
