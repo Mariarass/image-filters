@@ -3,6 +3,8 @@ import { predefinedFilters } from './helpers/filters';
 import { useDebounce } from './hooks/useDebounce';
 import {convert4x4to4x5, multiplyColorMatrices} from "./hooks/matrixUtils";
 import { v4 as uuidv4 } from 'uuid';
+import html2canvas from 'html2canvas';
+
 export type FilterProps = {
     imageUrl: string;
     filter?: string;
@@ -28,6 +30,7 @@ export type FilterProps = {
         b:number,
         a:number
     }
+    gradient?:string
 
 };
 
@@ -51,6 +54,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
                                                      preview,
                                                      highlights = 0,
                                                      canvasColor,
+                                                     gradient
                                                  }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement>(new Image());
@@ -169,6 +173,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     const fragmentShaderSource = `
     precision highp float;
     uniform sampler2D u_image;
+    uniform sampler2D u_gradient;
     uniform mat4 u_colorMatrix;
     uniform vec4 u_bias;
     uniform float u_brightness;
@@ -183,7 +188,6 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     uniform float u_sharpness;
     uniform float u_highlights;
     uniform vec4 u_canvasColor;
-
     uniform vec2 u_resolution;
     varying vec2 v_texCoord;
 
@@ -307,6 +311,10 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
       }
       
       color.rgb = clamp(color.rgb, 0.0, 1.0);
+      // --- Градиент поверх изображения, но под canvasColor ---
+      vec4 gradColor = texture2D(u_gradient, v_texCoord);
+      color.rgb = mix(color.rgb, gradColor.rgb, gradColor.a);
+      // --- canvasColor поверх ---
       color.rgb = mix(color.rgb, u_canvasColor.rgb, u_canvasColor.a);
       gl_FragColor = color;
     }
@@ -322,128 +330,184 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
             return;
         }
 
-        const createShader = (type: number, source: string) => {
-            const shader = gl.createShader(type);
-            if (!shader) return null;
-            gl.shaderSource(shader, source);
-            gl.compileShader(shader);
-            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                console.error("Shader compile error:", gl.getShaderInfoLog(shader));
-                gl.deleteShader(shader);
-                return null;
+        let gradTexture: WebGLTexture | null = null;
+        let gradCanvas: HTMLCanvasElement | null = null;
+        let imageTexture: WebGLTexture | null = null;
+        let width = 0;
+        let height = 0;
+
+        function setCanvasSizes(img: HTMLImageElement) {
+            if (!canvas) return;
+            width = img.naturalWidth;
+            height = img.naturalHeight;
+            canvas.width = width;
+            canvas.height = height;
+            if (gradCanvas) {
+                gradCanvas.width = width;
+                gradCanvas.height = height;
             }
-            return shader;
-        };
-
-        const vertexShader = createShader(gl.VERTEX_SHADER, vertexShaderSource);
-        const fragmentShader = createShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
-        if (!vertexShader || !fragmentShader) return;
-
-        const program = gl.createProgram();
-        if (!program) return;
-        gl.attachShader(program, vertexShader);
-        gl.attachShader(program, fragmentShader);
-        gl.linkProgram(program);
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.error("Program link error:", gl.getProgramInfoLog(program));
-            return;
         }
-        gl.useProgram(program);
 
-        const positionLocation = gl.getAttribLocation(program, "a_position");
-        const texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
+        async function prepareGradientTexture(img: HTMLImageElement) {
+            gradCanvas = document.createElement('canvas');
+            gradCanvas.width = img.naturalWidth;
+            gradCanvas.height = img.naturalHeight;
 
-        // Create and bind the vertex buffer
-        const positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        const positions = new Float32Array([
-            -1, -1,  1, -1, -1,  1,
-            -1,  1,  1, -1,  1,  1,
-        ]);
-        gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
-        gl.enableVertexAttribArray(positionLocation);
-        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+            const gradDiv = document.createElement('div');
+            gradDiv.style.width = (gradCanvas.width/2) + 'px';
+            gradDiv.style.height = gradCanvas.height/2 + 'px';
+            gradDiv.style.background = gradient || 'none';
+            gradDiv.style.position = 'absolute';
+            gradDiv.style.left = '-9999px';
+            
+            document.body.appendChild(gradDiv);
+          
+            console.log('gradDiv', gradDiv);
+            await html2canvas(gradDiv, {backgroundColor: null, canvas: gradCanvas});
+            document.body.removeChild(gradDiv);
+        }
 
-        // Create and bind the texture coordinate buffer
-        const texCoordBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-        const texCoords = new Float32Array([
-            0, 0,  1, 0,  0, 1,
-            0, 1,  1, 0,  1, 1,
-        ]);
-        gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
-        gl.enableVertexAttribArray(texCoordLocation);
-        gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
-
-        // Setup the texture
-        const texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-
-        // Set uniforms
-        const u_colorMatrixLoc = gl.getUniformLocation(program, "u_colorMatrix");
-        const u_biasLoc = gl.getUniformLocation(program, "u_bias");
-        const u_brightnessLoc = gl.getUniformLocation(program, "u_brightness");
-        const u_contrastLoc = gl.getUniformLocation(program, "u_contrast");
-        const u_saturationLoc = gl.getUniformLocation(program, "u_saturation");
-        const u_hueLoc = gl.getUniformLocation(program, "u_hue");
-        const u_presetHueLoc = gl.getUniformLocation(program, "u_presetHue");
-        const u_vignetteLoc = gl.getUniformLocation(program, "u_vignette");
-        const u_shadowsLoc = gl.getUniformLocation(program, "u_shadows");
-        const u_grainIntensityLoc = gl.getUniformLocation(program, "u_grainIntensity");
-        const u_sharpnessLoc = gl.getUniformLocation(program, "u_sharpness");
-        const u_intensityLoc = gl.getUniformLocation(program, "u_intensity");
-        const u_highlightsLoc = gl.getUniformLocation(program, "u_highlights");
-        const u_canvasColorLoc = gl.getUniformLocation(program, "u_canvasColor");
-
-
-        
-        gl.uniformMatrix4fv(u_colorMatrixLoc, false, u_colorMatrix);
-        gl.uniform4fv(u_biasLoc, u_bias);
-        gl.uniform1f(u_brightnessLoc, finalBrightness);
-        gl.uniform1f(u_contrastLoc, finalContrast);
-        gl.uniform1f(u_saturationLoc, finalSaturation);
-        gl.uniform1f(u_hueLoc, finalHue);
-        gl.uniform1f(u_presetHueLoc, presetHueValue);
-        gl.uniform1f(u_vignetteLoc, finalVignette);
-        gl.uniform1f(u_shadowsLoc, finalShadows);
-        gl.uniform1f(u_grainIntensityLoc, finalGrainIntensity);
-        gl.uniform1f(u_sharpnessLoc, u_sharpness);
-        gl.uniform1f(u_intensityLoc, fi);
-        gl.uniform1f(u_highlightsLoc, finalHighlights);
-        gl.uniform4f(
-          u_canvasColorLoc,
-          (canvasColor?.r ?? 0) / 255,
-          (canvasColor?.g ?? 0) / 255,
-          (canvasColor?.b ?? 0) / 255,
-          (canvasColor?.a ?? 0) / 100
-        );
-
-        const u_resolutionLoc = gl.getUniformLocation(program, "u_resolution");
-
-        imageRef.current.crossOrigin = "anonymous";
-        imageRef.current.src = imageUrl;
-        imageRef.current.onload = () => {
-            canvas.width = imageRef.current.naturalWidth;
-            canvas.height = imageRef.current.naturalHeight;
-            gl.viewport(0, 0, canvas.width, canvas.height);
-            gl.uniform2f(u_resolutionLoc, canvas.width, canvas.height);
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(
-                gl.TEXTURE_2D,
-                0,
-                gl.RGBA,
-                gl.RGBA,
-                gl.UNSIGNED_BYTE,
-                imageRef.current
-            );
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-        };
-
+        async function renderWebGL() {
+            if (!gl || !canvas) return;
+            imageRef.current.crossOrigin = "anonymous";
+            imageRef.current.src = imageUrl;
+            imageRef.current.onload = async () => {
+                setCanvasSizes(imageRef.current);
+                if (gradient) {
+                    await prepareGradientTexture(imageRef.current);
+                }
+                // --- WebGL pipeline ---
+                const createShader = (type: number, source: string) => {
+                    const shader = gl.createShader(type);
+                    if (!shader) return null;
+                    gl.shaderSource(shader, source);
+                    gl.compileShader(shader);
+                    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                        console.error("Shader compile error:", gl.getShaderInfoLog(shader));
+                        gl.deleteShader(shader);
+                        return null;
+                    }
+                    return shader;
+                };
+                const vertexShader = createShader(gl.VERTEX_SHADER, vertexShaderSource);
+                const fragmentShader = createShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
+                if (!vertexShader || !fragmentShader) return;
+                const program = gl.createProgram();
+                if (!program) return;
+                gl.attachShader(program, vertexShader);
+                gl.attachShader(program, fragmentShader);
+                gl.linkProgram(program);
+                if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                    console.error("Program link error:", gl.getProgramInfoLog(program));
+                    return;
+                }
+                gl.useProgram(program);
+                const positionLocation = gl.getAttribLocation(program, "a_position");
+                const texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
+                // Create and bind the vertex buffer
+                const positionBuffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+                const positions = new Float32Array([
+                    -1, -1,  1, -1, -1,  1,
+                    -1,  1,  1, -1,  1,  1,
+                ]);
+                gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+                gl.enableVertexAttribArray(positionLocation);
+                gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+                // Create and bind the texture coordinate buffer
+                const texCoordBuffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+                const texCoords = new Float32Array([
+                    0, 0,  1, 0,  0, 1,
+                    0, 1,  1, 0,  1, 1,
+                ]);
+                gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
+                gl.enableVertexAttribArray(texCoordLocation);
+                gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+                // --- Image texture ---
+                imageTexture = gl.createTexture();
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                gl.texImage2D(
+                    gl.TEXTURE_2D,
+                    0,
+                    gl.RGBA,
+                    gl.RGBA,
+                    gl.UNSIGNED_BYTE,
+                    imageRef.current
+                );
+                // --- Gradient texture ---
+                if (gradient && gradCanvas) {
+                    gradTexture = gl.createTexture();
+                    gl.activeTexture(gl.TEXTURE1);
+                    gl.bindTexture(gl.TEXTURE_2D, gradTexture);
+                    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                    gl.texImage2D(
+                        gl.TEXTURE_2D,
+                        0,
+                        gl.RGBA,
+                        gl.RGBA,
+                        gl.UNSIGNED_BYTE,
+                        gradCanvas
+                    );
+                }
+                // Set uniforms
+                const u_colorMatrixLoc = gl.getUniformLocation(program, "u_colorMatrix");
+                const u_biasLoc = gl.getUniformLocation(program, "u_bias");
+                const u_brightnessLoc = gl.getUniformLocation(program, "u_brightness");
+                const u_contrastLoc = gl.getUniformLocation(program, "u_contrast");
+                const u_saturationLoc = gl.getUniformLocation(program, "u_saturation");
+                const u_hueLoc = gl.getUniformLocation(program, "u_hue");
+                const u_presetHueLoc = gl.getUniformLocation(program, "u_presetHue");
+                const u_vignetteLoc = gl.getUniformLocation(program, "u_vignette");
+                const u_shadowsLoc = gl.getUniformLocation(program, "u_shadows");
+                const u_grainIntensityLoc = gl.getUniformLocation(program, "u_grainIntensity");
+                const u_sharpnessLoc = gl.getUniformLocation(program, "u_sharpness");
+                const u_intensityLoc = gl.getUniformLocation(program, "u_intensity");
+                const u_highlightsLoc = gl.getUniformLocation(program, "u_highlights");
+                const u_canvasColorLoc = gl.getUniformLocation(program, "u_canvasColor");
+                gl.uniformMatrix4fv(u_colorMatrixLoc, false, u_colorMatrix);
+                gl.uniform4fv(u_biasLoc, u_bias);
+                gl.uniform1f(u_brightnessLoc, finalBrightness);
+                gl.uniform1f(u_contrastLoc, finalContrast);
+                gl.uniform1f(u_saturationLoc, finalSaturation);
+                gl.uniform1f(u_hueLoc, finalHue);
+                gl.uniform1f(u_presetHueLoc, presetHueValue);
+                gl.uniform1f(u_vignetteLoc, finalVignette);
+                gl.uniform1f(u_shadowsLoc, finalShadows);
+                gl.uniform1f(u_grainIntensityLoc, finalGrainIntensity);
+                gl.uniform1f(u_sharpnessLoc, u_sharpness);
+                gl.uniform1f(u_intensityLoc, fi);
+                gl.uniform1f(u_highlightsLoc, finalHighlights);
+                gl.uniform4f(
+                  u_canvasColorLoc,
+                  (canvasColor?.r ?? 0) / 255,
+                  (canvasColor?.g ?? 0) / 255,
+                  (canvasColor?.b ?? 0) / 255,
+                  (canvasColor?.a ?? 0) / 100
+                );
+                const u_resolutionLoc = gl.getUniformLocation(program, "u_resolution");
+                gl.uniform2f(u_resolutionLoc, width, height);
+                // Bind textures to samplers
+                const u_imageLoc = gl.getUniformLocation(program, "u_image");
+                gl.uniform1i(u_imageLoc, 0); // TEXTURE0
+                if (gradient && gradTexture) {
+                    const u_gradientLoc = gl.getUniformLocation(program, "u_gradient");
+                    gl.uniform1i(u_gradientLoc, 1); // TEXTURE1
+                }
+                // viewport и drawArrays только после загрузки картинки и текстур
+                gl.viewport(0, 0, width, height);
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+            };
+        }
+        renderWebGL();
     }, [
         imageUrl,
         brightness,
@@ -465,6 +529,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         filter,
         finalHighlights,
         canvasColor,
+        gradient,
     ]);
 
     // Save the image if a saveImage function is provided

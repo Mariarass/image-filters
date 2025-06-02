@@ -26,6 +26,6 @@ export const Default = Template.bind({});
 
 Default.args = {
   saveImage:()=>{console.log('saveImage')},
- 
+  gradient:'radial-gradient(circle,rgba(63, 94, 251, 0.28) 0%, rgba(252, 70, 107, 1) 100%)',
   imageUrl: 'https://simpleecreate.com/images/rCfBiP7oGHVJOWMPHhY365ZGlWt3bjQGLXQq38bP.png',
 };
