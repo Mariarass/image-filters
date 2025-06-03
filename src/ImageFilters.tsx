@@ -78,9 +78,14 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     const debouncedFilterIntensity = useDebounce(filterIntensity ?? 100, 300);
     const debouncedHighlights = useDebounce(highlights, 300);
     const debouncedCanvasColor = useDebounce(canvasColor, 300);
+    const debouncedGradient = useDebounce(gradient, 300);
 
+    
+    const prevGradientRef = useRef<string | undefined>();
+    const prevWidthRef = useRef<number>();
+    const prevHeightRef = useRef<number>();
 
-    // Get the predefined filter settings if available
+   
     const predefinedFilterObj =
         filter && predefinedFilters[filter] ? predefinedFilters[filter] : {};
 
@@ -189,7 +194,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     uniform float u_highlights;
     uniform vec4 u_canvasColor;
     uniform vec2 u_resolution;
-    uniform bool u_hasGradient;
+    uniform int u_hasGradient;
     varying vec2 v_texCoord;
 
     // Functions for color operations
@@ -313,7 +318,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
       
       color.rgb = clamp(color.rgb, 0.0, 1.0);
 
-      if (u_hasGradient) {
+      if (u_hasGradient == 1) {
         vec4 gradColor = texture2D(u_gradient, v_texCoord);
         color.rgb = mix(color.rgb, gradColor.rgb, gradColor.a);
       }
@@ -352,20 +357,37 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         }
 
         async function prepareGradientTexture(img: HTMLImageElement) {
+            const width = img.naturalWidth;
+            const height = img.naturalHeight;
+           
+            if (
+                gradCanvas &&
+                prevGradientRef.current === gradient &&
+                prevWidthRef.current === width &&
+                prevHeightRef.current === height
+            ) {
+                
+                return;
+            }
+
+            prevGradientRef.current = gradient;
+            prevWidthRef.current = width;
+            prevHeightRef.current = height;
+
             gradCanvas = document.createElement('canvas');
-            gradCanvas.width = img.naturalWidth;
-            gradCanvas.height = img.naturalHeight;
+            gradCanvas.width = width;
+            gradCanvas.height = height;
 
             const gradDiv = document.createElement('div');
-            gradDiv.style.width = (gradCanvas.width/2) + 'px';
-            gradDiv.style.height = gradCanvas.height/2 + 'px';
+            gradDiv.style.width = gradCanvas.width + 'px';
+            gradDiv.style.height = gradCanvas.height + 'px';
             gradDiv.style.background = gradient || 'none';
             gradDiv.style.position = 'absolute';
             gradDiv.style.left = '-9999px';
-            
+            gradDiv.style.backgroundSize = 'cover';
+            gradDiv.style.backgroundPosition = 'center';
+            gradDiv.style.backgroundRepeat = 'no-repeat';
             document.body.appendChild(gradDiv);
-          
-            console.log('gradDiv', gradDiv);
             await html2canvas(gradDiv, {backgroundColor: null, canvas: gradCanvas});
             document.body.removeChild(gradDiv);
         }
@@ -376,7 +398,8 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
             imageRef.current.src = imageUrl;
             imageRef.current.onload = async () => {
                 setCanvasSizes(imageRef.current);
-                if (gradient) {
+                let hasGradient = !!gradient;
+                if (hasGradient) {
                     await prepareGradientTexture(imageRef.current);
                 }
                 // --- WebGL pipeline ---
@@ -444,7 +467,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                     imageRef.current
                 );
                 // --- Gradient texture ---
-                if (gradient && gradCanvas) {
+                if (hasGradient && gradCanvas) {
                     gradTexture = gl.createTexture();
                     gl.activeTexture(gl.TEXTURE1);
                     gl.bindTexture(gl.TEXTURE_2D, gradTexture);
@@ -497,13 +520,13 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                   (canvasColor?.b ?? 0) / 255,
                   (canvasColor?.a ?? 0) / 100
                 );
-                gl.uniform1i(u_hasGradientLoc, gradient ? 1 : 0);
+                gl.uniform1i(u_hasGradientLoc, hasGradient ? 1 : 0);
                 const u_resolutionLoc = gl.getUniformLocation(program, "u_resolution");
                 gl.uniform2f(u_resolutionLoc, width, height);
                 // Bind textures to samplers
                 const u_imageLoc = gl.getUniformLocation(program, "u_image");
                 gl.uniform1i(u_imageLoc, 0); // TEXTURE0
-                if (gradient && gradTexture) {
+                if (hasGradient && gradTexture) {
                     const u_gradientLoc = gl.getUniformLocation(program, "u_gradient");
                     gl.uniform1i(u_gradientLoc, 1); // TEXTURE1
                 }
@@ -535,6 +558,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         finalHighlights,
         canvasColor,
         gradient,
+
     ]);
 
     // Save the image if a saveImage function is provided
@@ -609,6 +633,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         debouncedFilterIntensity,
         debouncedHighlights,  
         debouncedCanvasColor,
+        debouncedGradient,
      
     ]);
 
