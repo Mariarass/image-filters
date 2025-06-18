@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { predefinedFilters } from './helpers/filters';
 import { useDebounce } from './hooks/useDebounce';
 import {convert4x4to4x5, multiplyColorMatrices} from "./hooks/matrixUtils";
@@ -58,6 +58,8 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
                                                  }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement>(new Image());
+    const [gradCanvas, setGradCanvas] = useState<HTMLCanvasElement | null>(null);
+    const [gradReady, setGradReady] = useState(false);
   //  const [savedImage, setSavedImage] = useState<string | null>(null);
     const filterId = `filter-${uuidv4()}`;
 
@@ -328,59 +330,43 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
     }
   `;
 
+
     useEffect(() => {
-      console.log('useEffect');
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
-        if (!gl) {
-            console.error("WebGL not supported");
-            return;
-        }
-
-        let gradTexture: WebGLTexture | null = null;
-        let gradCanvas: HTMLCanvasElement | null = null;
-        let imageTexture: WebGLTexture | null = null;
-        let width = 0;
-        let height = 0;
-
-        function setCanvasSizes(img: HTMLImageElement) {
-            if (!canvas) return;
-            width = img.naturalWidth;
-            height = img.naturalHeight;
-            canvas.width = width;
-            canvas.height = height;
-            if (gradCanvas) {
-                gradCanvas.width = width;
-                gradCanvas.height = height;
+        let isMounted = true;
+        async function prepareGradient() {
+            setGradReady(false);
+            if (!gradient) {
+                setGradCanvas(null);
+                setGradReady(true);
+                return;
             }
-        }
+   
+            if (!imageRef.current || !imageRef.current.naturalWidth) {
+                setGradCanvas(null);
+                setGradReady(true);
+                return;
+            }
+            const width = imageRef.current.naturalWidth;
+            const height = imageRef.current.naturalHeight;
 
-        async function prepareGradientTexture(img: HTMLImageElement) {
-            const width = img.naturalWidth;
-            const height = img.naturalHeight;
-           
             if (
                 gradCanvas &&
                 prevGradientRef.current === gradient &&
                 prevWidthRef.current === width &&
                 prevHeightRef.current === height
             ) {
-                
+                setGradReady(true);
                 return;
             }
-
             prevGradientRef.current = gradient;
             prevWidthRef.current = width;
             prevHeightRef.current = height;
-
-            gradCanvas = document.createElement('canvas');
-            gradCanvas.width = width;
-            gradCanvas.height = height;
-
+            const newGradCanvas = document.createElement('canvas');
+            newGradCanvas.width = width;
+            newGradCanvas.height = height;
             const gradDiv = document.createElement('div');
-            gradDiv.style.width = gradCanvas.width + 'px';
-            gradDiv.style.height = gradCanvas.height + 'px';
+            gradDiv.style.width = newGradCanvas.width + 'px';
+            gradDiv.style.height = newGradCanvas.height + 'px';
             gradDiv.style.background = gradient || 'none';
             gradDiv.style.position = 'absolute';
             gradDiv.style.left = '-9999px';
@@ -388,20 +374,49 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
             gradDiv.style.backgroundPosition = 'center';
             gradDiv.style.backgroundRepeat = 'no-repeat';
             document.body.appendChild(gradDiv);
-            await html2canvas(gradDiv, {backgroundColor: null, canvas: gradCanvas});
+            await html2canvas(gradDiv, {backgroundColor: null, canvas: newGradCanvas});
             document.body.removeChild(gradDiv);
+            if (isMounted) {
+                setGradCanvas(newGradCanvas);
+                setGradReady(true);
+            }
         }
+        if (gradient) {
+            prepareGradient();
+        } else {
+            setGradCanvas(null);
+            setGradReady(true);
+        }
+        return () => { isMounted = false; };
+    }, [gradient, imageUrl, debouncedGradient]);
 
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
+        if (!gl) {
+            console.error("WebGL not supported");
+            return;
+        }
+        let gradTexture: WebGLTexture | null = null;
+        let imageTexture: WebGLTexture | null = null;
+        let width = 0;
+        let height = 0;
+        function setCanvasSizes(img: HTMLImageElement) {
+            if (!canvas) return;
+            width = img.naturalWidth;
+            height = img.naturalHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
         async function renderWebGL() {
             if (!gl || !canvas) return;
             imageRef.current.crossOrigin = "anonymous";
             imageRef.current.src = imageUrl;
             imageRef.current.onload = async () => {
                 setCanvasSizes(imageRef.current);
-                let hasGradient = !!gradient;
-                if (hasGradient) {
-                    await prepareGradientTexture(imageRef.current);
-                }
+                let hasGradient = !!gradient && gradCanvas;
                 // --- WebGL pipeline ---
                 const createShader = (type: number, source: string) => {
                     const shader = gl.createShader(type);
@@ -530,11 +545,12 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                     const u_gradientLoc = gl.getUniformLocation(program, "u_gradient");
                     gl.uniform1i(u_gradientLoc, 1); // TEXTURE1
                 }
-                // viewport и drawArrays только после загрузки картинки и текстур
                 gl.viewport(0, 0, width, height);
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
             };
         }
+        // Если градиент есть, ждём его готовности
+        if (gradient && !gradReady) return;
         renderWebGL();
     }, [
         imageUrl,
@@ -558,7 +574,8 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         finalHighlights,
         canvasColor,
         gradient,
-
+        gradCanvas,
+        gradReady
     ]);
 
     // Save the image if a saveImage function is provided
@@ -684,6 +701,9 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                     style={{ border: '1px solid red',   width: '100px', height: '100px', position: 'absolute', top:100, left: 0, right: 0, bottom: 0  }}
                 />
             )} */}
+
+
+            
         </div>
     );
 };
