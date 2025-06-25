@@ -12,12 +12,11 @@ function createGradientCanvas(width: number, height: number, gradientString: str
     // Check cache
     const cacheKey = `${gradientString}_${width}x${height}`;
     if (gradientCache.has(cacheKey)) {
-        console.log('🎨 Using cached gradient:', gradientString);
+     
         return gradientCache.get(cacheKey)!;
     }
 
-    console.log('🎨 Creating new gradient:', gradientString);
-
+  
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -28,12 +27,12 @@ function createGradientCanvas(width: number, height: number, gradientString: str
     let gradientType = 'linear';
     let gradientMatch = gradientString.match(/(linear|radial)-gradient\(([^)]+)\)/);
     if (!gradientMatch) {
-        console.error('❌ Failed to parse gradient:', gradientString);
+      
         return canvas;
     }
     gradientType = gradientMatch[1];
     const fullContent = gradientMatch[2];
-    console.log('📝 Type:', gradientType, 'Content:', fullContent);
+   
 
     // For linear-gradient, look for angle
     let angle = '0deg';
@@ -44,7 +43,7 @@ function createGradientCanvas(width: number, height: number, gradientString: str
             angle = angleMatch[1];
             stopsContent = fullContent.substring(angleMatch[0].length + 1);
         }
-        console.log('📐 Angle:', angle);
+
     } else {
         // For radial-gradient, just take all content as stops
         stopsContent = fullContent;
@@ -68,7 +67,7 @@ function createGradientCanvas(width: number, height: number, gradientString: str
     if (currentStop) {
         stops.push(currentStop.trim());
     }
-    console.log('🛑 Stops:', stops);
+  
 
     // Create gradient
     let gradient: CanvasGradient | undefined = undefined;
@@ -81,7 +80,7 @@ function createGradientCanvas(width: number, height: number, gradientString: str
             const x2 = width / 2 + Math.cos(rad) * width / 2;
             const y2 = height / 2 + Math.sin(rad) * height / 2;
             gradient = ctx.createLinearGradient(x1, y1, x2, y2);
-            console.log('📐 Gradient coordinates:', { x1, y1, x2, y2 });
+        
         } else {
             gradient = ctx.createLinearGradient(0, 0, 0, height);
         }
@@ -92,17 +91,17 @@ function createGradientCanvas(width: number, height: number, gradientString: str
         const cy = height / 2;
         const r = Math.max(width, height) / 2;
         gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-        console.log('🌀 Radial gradient:', { cx, cy, r, width, height });
+      
     }
 
     if (!gradient) {
-        console.error('❌ Failed to create CanvasGradient object');
+
         return canvas;
     }
 
     // Add color stops
     stops.forEach((stop, index) => {
-        console.log(`🔍 Parsing stop ${index}:`, stop);
+     
         let color = '';
         let position = '';
         // Only hex + position
@@ -111,7 +110,7 @@ function createGradientCanvas(width: number, height: number, gradientString: str
             color = hexMatch[1];
             position = (hexMatch[2] || '').trim();
         } else {
-            console.error('❌ Stop is not a hex color:', stop);
+         
             return;
         }
         // Convert position to a value from 0 to 1
@@ -127,17 +126,17 @@ function createGradientCanvas(width: number, height: number, gradientString: str
         }
         positionValue = Math.max(0, Math.min(1, positionValue));
         if (!isFinite(positionValue)) {
-            console.error('❌ Invalid position for addColorStop:', { color, position, index, stops });
+          
             return;
         }
         gradient?.addColorStop(positionValue, color);
-        console.log(`🎨 Stop ${index}:`, { color, position, positionValue });
+      
     });
 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
     gradientCache.set(cacheKey, canvas);
-    console.log('✅ Gradient created and cached');
+ 
     return canvas;
 }
 
@@ -551,13 +550,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 setCanvasSizes(imageRef.current);
                 let hasGradient = !!gradient && gradCanvas;
                 
-                console.log('🎨 Render WebGL:', {
-                    gradient,
-                    gradCanvas: !!gradCanvas,
-                    hasGradient: Boolean(hasGradient),
-                    gradReady
-                });
-                
+             
                 // --- WebGL pipeline ---
                 const createShader = (type: number, source: string) => {
                     const shader = gl.createShader(type);
@@ -624,10 +617,6 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 );
                 // --- Gradient texture ---
                 if (hasGradient && gradCanvas) {
-                    console.log('🎨 Creating gradient texture:', {
-                        gradCanvasWidth: gradCanvas.width,
-                        gradCanvasHeight: gradCanvas.height
-                    });
                     
                     gradTexture = gl.createTexture();
                     gl.activeTexture(gl.TEXTURE1);
@@ -644,7 +633,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                         gl.UNSIGNED_BYTE,
                         gradCanvas
                     );
-                    console.log('✅ Gradient texture created');
+                   
                 } else {
                     console.log('❌ Gradient texture not created:', {
                         hasGradient,
@@ -690,13 +679,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 gl.uniform1i(u_hasGradientLoc, hasGradient ? 1 : 0);
                 const u_resolutionLoc = gl.getUniformLocation(program, "u_resolution");
                 gl.uniform2f(u_resolutionLoc, width, height);
-                
-                console.log('🎨 Uniform variables:', {
-                    hasGradient,
-                    u_hasGradient: hasGradient ? 1 : 0,
-                    width,
-                    height
-                });
+             
                 
                 // Bind textures to samplers
                 const u_imageLoc = gl.getUniformLocation(program, "u_image");
@@ -711,10 +694,10 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         }
         // If gradient exists, wait for its readiness
         if (gradient && !gradReady) {
-            console.log('⏳ Waiting for gradient readiness:', { gradient, gradReady });
+        
             return;
         }
-        console.log('🚀 Starting WebGL render:', { gradient, gradReady });
+
         renderWebGL();
     }, [
         imageUrl,
@@ -744,7 +727,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
 
     // Save the image if a saveImage function is provided
     useEffect(() => {
-      console.log('saveImage',saveImage);
+
         const canvas = canvasRef.current;
         if (!canvas || !saveImage) return;
 
