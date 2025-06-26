@@ -468,57 +468,91 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
       gl_FragColor = color;
     }
   `;
+   const prepareGradient = () => {
+    setGradReady(false);
+    if (!gradient) {
+        setGradCanvas(null);
+        setGradReady(true);
+        return;
+    }
+
+    // Wait for image loading for dimensions
+    if (!imageRef.current || !imageRef.current.naturalWidth) {
+      
+        setGradCanvas(null);
+        setGradReady(true);
+
+        return;
+    }
+    const width = imageRef.current.naturalWidth;
+    const height = imageRef.current.naturalHeight;
+    // Check if gradCanvas already exists
+   
+    if (
+        gradCanvas &&
+        prevGradientRef.current === gradient &&
+        prevWidthRef.current === width &&
+        prevHeightRef.current === height
+    ) {
+        setGradReady(true);
+        return;
+    }
+    prevGradientRef.current = gradient;
+    prevWidthRef.current = width;
+    prevHeightRef.current = height;
+    
+    // Create gradient programmatically instead of html2canvas
+    const newGradCanvas = createGradientCanvas(width, height, gradient);
+        setGradCanvas(newGradCanvas);
+        setGradReady(true);
+
+}
+
 
 
     useEffect(() => {
-        let isMounted = true;
-        async function prepareGradient() {
-            setGradReady(false);
-            if (!gradient) {
-                setGradCanvas(null);
-                setGradReady(true);
-                return;
-            }
-            // Wait for image loading for dimensions
-            if (!imageRef.current || !imageRef.current.naturalWidth) {
-                setGradCanvas(null);
-                setGradReady(true);
-                return;
-            }
-            const width = imageRef.current.naturalWidth;
-            const height = imageRef.current.naturalHeight;
-            // Check if gradCanvas already exists
-            if (
-                gradCanvas &&
-                prevGradientRef.current === gradient &&
-                prevWidthRef.current === width &&
-                prevHeightRef.current === height
-            ) {
-                setGradReady(true);
-                return;
-            }
-            prevGradientRef.current = gradient;
-            prevWidthRef.current = width;
-            prevHeightRef.current = height;
-            
-            // Create gradient programmatically instead of html2canvas
-            const newGradCanvas = createGradientCanvas(width, height, gradient);
-            
-            if (isMounted) {
-                setGradCanvas(newGradCanvas);
-                setGradReady(true);
-            }
-        }
-        if (gradient) {
+      
+        if (gradient) {  
             prepareGradient();
         } else {
             setGradCanvas(null);
             setGradReady(true);
         }
-        return () => { isMounted = false; };
     }, [gradient, imageUrl, debouncedGradient]);
 
-    // Clear cache when image changes
+
+
+        useEffect(() => {
+            setGradCanvas(null);
+            setGradReady(false);
+        
+            if (!imageUrl) return;
+        
+            const img = imageRef.current;
+            img.crossOrigin = "anonymous";
+            img.src = imageUrl;
+        
+            const onLoad = () => {
+        
+            if (gradient) {
+                prepareGradient();
+            } else {
+                setGradCanvas(null);
+                setGradReady(true);
+            }
+            };
+        
+            if (img.complete && img.naturalWidth > 0) {
+            onLoad();
+            } else {
+            img.onload = onLoad;
+            }
+        
+            return () => {
+            img.onload = null;
+            };
+        }, []);
+
     useEffect(() => {
         clearGradientCache();
     }, [imageUrl]);
@@ -548,9 +582,9 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
             imageRef.current.src = imageUrl;
             imageRef.current.onload = async () => {
                 setCanvasSizes(imageRef.current);
-                let hasGradient = !!gradient && gradCanvas;
-                
              
+                let hasGradient = !!gradient && gradCanvas;
+              
                 // --- WebGL pipeline ---
                 const createShader = (type: number, source: string) => {
                     const shader = gl.createShader(type);
@@ -697,7 +731,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         
             return;
         }
-
+ 
         renderWebGL();
     }, [
         imageUrl,
@@ -725,9 +759,13 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         gradReady
     ]);
 
+
+
+    
+
     // Save the image if a saveImage function is provided
     useEffect(() => {
-
+      console.log('saveImage',saveImage);
         const canvas = canvasRef.current;
         if (!canvas || !saveImage) return;
 

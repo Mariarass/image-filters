@@ -617,7 +617,7 @@ export const FullPropsTester = () => {
   const [greenChannel, setGreenChannel] = useState(1);
   const [blueChannel, setBlueChannel] = useState(1);
   const [canvasColor, setCanvasColor] = useState('#ffffff');
-  const [canvasAlpha, setCanvasAlpha] = useState(1);
+  const [canvasAlpha, setCanvasAlpha] = useState(0);
   const [filter, setFilter] = useState('none');
   const [preview, setPreview] = useState(false);
   const [imageUrl, setImageUrl] = useState('https://simpleecreate.com/images/rCfBiP7oGHVJOWMPHhY365ZGlWt3bjQGLXQq38bP.png');
