@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { predefinedFilters } from './helpers/filters';
 import { useDebounce } from './hooks/useDebounce';
 import {convert4x4to4x5, multiplyColorMatrices} from "./hooks/matrixUtils";
@@ -300,8 +300,8 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
         }
         finalMatrix = multiplyColorMatrices(userMatrix, mixedMatrix);
     }
-    const u_colorMatrix = new Float32Array(finalMatrix);
-    const u_bias = new Float32Array([0, 0, 0, 0]);
+    const u_colorMatrix = useMemo(() => new Float32Array(finalMatrix), [finalMatrix]);
+    const u_bias = useMemo(() => new Float32Array([0, 0, 0, 0]), []);
 
     // The filter opacity is now always 1.0 since we apply intensity to each preset parameter separately
 
@@ -587,6 +587,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
               
                 // --- WebGL pipeline ---
                 const createShader = (type: number, source: string) => {
+                console.log('createShader');
                     const shader = gl.createShader(type);
                     if (!shader) return null;
                     gl.shaderSource(shader, source);
@@ -756,7 +757,8 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         canvasColor,
         gradient,
         gradCanvas,
-        gradReady
+        gradReady,
+       
     ]);
 
 
@@ -893,4 +895,35 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
     );
 };
 
-export default WebGLImageFilter;
+function isCanvasColorEqual(a?: {r:number,g:number,b:number,a:number}, b?: {r:number,g:number,b:number,a:number}) {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  return a.r === b.r && a.g === b.g && a.b === b.b && a.a === b.a;
+}
+
+const areEqual = (prev: FilterProps, next: FilterProps) => {
+  return (
+    prev.imageUrl === next.imageUrl &&
+    prev.filter === next.filter &&
+    prev.redChannel === next.redChannel &&
+    prev.greenChannel === next.greenChannel &&
+    prev.blueChannel === next.blueChannel &&
+    prev.brightness === next.brightness &&
+    prev.contrast === next.contrast &&
+    prev.saturation === next.saturation &&
+    prev.hueRotate === next.hueRotate &&
+    prev.vignette === next.vignette &&
+    prev.shadows === next.shadows &&
+    prev.grain === next.grain &&
+    prev.filterIntensity === next.filterIntensity &&
+    prev.sharpness === next.sharpness &&
+    prev.preview === next.preview &&
+    prev.highlights === next.highlights &&
+    isCanvasColorEqual(prev.canvasColor, next.canvasColor) &&
+    prev.gradient === next.gradient
+  );
+};
+
+const MemoWebGLImageFilter = React.memo(WebGLImageFilter, areEqual);
+
+export default MemoWebGLImageFilter;

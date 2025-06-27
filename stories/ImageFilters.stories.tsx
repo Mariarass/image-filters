@@ -655,6 +655,11 @@ export const FullPropsTester = () => {
     return `radial-gradient(circle, ${c1}, ${c2}, ${c3})`;
   };
 
+  const [width, setWidth] = useState(400);
+  const [height, setHeight] = useState(400);
+  const [positionX, setPositionX] = useState(0);
+  const [positionY, setPositionY] = useState(0);
+
   return (
     <div style={{ padding: 20 }}>
       <h2>🧪 FullPropsTester: All ImageFilters props</h2>
@@ -770,8 +775,54 @@ export const FullPropsTester = () => {
           <label>Image URL:</label>
           <input type="text" value={imageUrl} onChange={e => setImageUrl(e.target.value)} style={{ width: '100%' }} />
         </div>
+        <div style={{ marginBottom: 20, display: 'flex', gap: 20 }}>
+          <div>
+            <label>Width: {width}px</label>
+            <input
+              type="range"
+              min="100"
+              max="1000"
+              value={width}
+              onChange={e => setWidth(Number(e.target.value))}
+              style={{ width: 200 }}
+            />
+          </div>
+          <div>
+            <label>Height: {height}px</label>
+            <input
+              type="range"
+              min="100"
+              max="1000"
+              value={height}
+              onChange={e => setHeight(Number(e.target.value))}
+              style={{ width: 200 }}
+            />
+          </div>
+          <div>
+            <label>X: {positionX}px</label>
+            <input
+              type="range"
+              min="-500"
+              max="500"
+              value={positionX}
+              onChange={e => setPositionX(Number(e.target.value))}
+              style={{ width: 200 }}
+            />
+          </div>
+          <div>
+            <label>Y: {positionY}px</label>
+            <input
+              type="range"
+              min="-500"
+              max="500"
+              value={positionY}
+              onChange={e => setPositionY(Number(e.target.value))}
+              style={{ width: 200 }}
+            />
+          </div>
+        </div>
       </div>
-      <div style={{ width:400, height: 400, border: '2px solid #ddd', borderRadius: 8, overflow: 'hidden', margin: '0 auto' }}>
+      <div style={{ backgroundColor: 'red',height:`${height}px`,width:`${width}px`,border: '2px solid #ddd', borderRadius: 8, overflow: 'hidden', margin: '0 auto', position: 'relative', left: positionX, top: positionY }}>
         <ImageFilters
           imageUrl={imageUrl}
           brightness={brightness}
@@ -797,8 +848,8 @@ export const FullPropsTester = () => {
           filter={filter}
           preview={preview}
           styles={{
-            width: '400px',
-            height: '400px',
+           height:`${height}px`,width:`${width}px`
+        
           }}
           saveImage={file => console.log('saveImage', file)}
         />
