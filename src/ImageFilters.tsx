@@ -145,6 +145,7 @@ function clearGradientCache() {
     gradientCache.clear();
 }
 
+type CropRect = { x: number; y: number; width: number; height: number };
 export type FilterProps = {
     imageUrl: string;
     filter?: string;
@@ -171,7 +172,7 @@ export type FilterProps = {
         a:number
     }
     gradient?:string
-
+    crop?: CropRect;
 };
 
 const WebGLImageFilter: React.FC<FilterProps> = ({
@@ -194,7 +195,8 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
                                                      preview,
                                                      highlights = 0,
                                                      canvasColor,
-                                                     gradient
+                                                     gradient,
+                                                     crop
                                                  }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement>(new Image());
@@ -336,6 +338,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     uniform vec4 u_canvasColor;
     uniform vec2 u_resolution;
     uniform int u_hasGradient;
+    uniform vec4 u_crop;
     varying vec2 v_texCoord;
 
     // Functions for color operations
@@ -410,8 +413,11 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
     }
 
     void main() {
-      // Get the original pixel color
-      vec4 origColor = texture2D(u_image, v_texCoord);
+      vec2 cropOrigin = u_crop.xy;
+      vec2 cropSize = u_crop.zw;
+      vec2 texSize = u_resolution;
+      vec2 cropCoord = (v_texCoord * cropSize + cropOrigin) / texSize;
+      vec4 origColor = texture2D(u_image, cropCoord);
       
       // Always apply colorMatrix (userMatrix * presetMatrix)
       vec4 color = u_colorMatrix * origColor + u_bias;
@@ -573,8 +579,8 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
             if (!canvas) return;
             width = img.naturalWidth;
             height = img.naturalHeight;
-            canvas.width = width;
-            canvas.height = height;
+            canvas.width = crop?.width ?? width;
+            canvas.height = crop?.height ?? height;
         }
         async function renderWebGL() {
             if (!gl || !canvas) return;
@@ -691,6 +697,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 const u_highlightsLoc = gl.getUniformLocation(program, "u_highlights");
                 const u_canvasColorLoc = gl.getUniformLocation(program, "u_canvasColor");
                 const u_hasGradientLoc = gl.getUniformLocation(program, "u_hasGradient");
+                const u_cropLoc = gl.getUniformLocation(program, "u_crop");
                 gl.uniformMatrix4fv(u_colorMatrixLoc, false, u_colorMatrix);
                 gl.uniform4fv(u_biasLoc, u_bias);
                 gl.uniform1f(u_brightnessLoc, finalBrightness);
@@ -712,6 +719,13 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                   (canvasColor?.a ?? 0) / 100
                 );
                 gl.uniform1i(u_hasGradientLoc, hasGradient ? 1 : 0);
+                gl.uniform4f(
+                  u_cropLoc,
+                  crop?.x ?? 0,
+                  crop?.y ?? 0,
+                  crop?.width ?? width,
+                  crop?.height ?? height
+                );
                 const u_resolutionLoc = gl.getUniformLocation(program, "u_resolution");
                 gl.uniform2f(u_resolutionLoc, width, height);
              
@@ -758,7 +772,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         gradient,
         gradCanvas,
         gradReady,
-       
+        crop,
     ]);
 
 
@@ -873,25 +887,18 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
 
 
     return (
-        <div style={{ position: 'absolute', width: '100%', height: '100%',overflow: 'hidden', ...styles }}>
+        // <div style={{ position: 'absolute', width: '100%', height: '100%',overflow: 'hidden', ...styles }}>
             <canvas
                 ref={canvasRef}
                 style={preview ? { display: 'none' } : { width: '100%', height: '100%',position: 'relative',
                   objectFit: 'cover',
                   top: 0, left: 0, right: 0, bottom: 0 }}
             />
-            {/* {savedImage && (
-              
-                <img
-                    src={savedImage}
-                    alt="Saved"
-                    style={{ border: '1px solid red',   width: '100px', height: '100px', position: 'absolute', top:100, left: 0, right: 0, bottom: 0  }}
-                />
-            )} */}
+            
 
 
             
-        </div>
+        // </div>
     );
 };
 
@@ -899,6 +906,12 @@ function isCanvasColorEqual(a?: {r:number,g:number,b:number,a:number}, b?: {r:nu
   if (!a && !b) return true;
   if (!a || !b) return false;
   return a.r === b.r && a.g === b.g && a.b === b.b && a.a === b.a;
+}
+
+function isCropEqual(a?: CropRect, b?: CropRect) {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }
 
 const areEqual = (prev: FilterProps, next: FilterProps) => {
@@ -920,7 +933,8 @@ const areEqual = (prev: FilterProps, next: FilterProps) => {
     prev.preview === next.preview &&
     prev.highlights === next.highlights &&
     isCanvasColorEqual(prev.canvasColor, next.canvasColor) &&
-    prev.gradient === next.gradient
+    prev.gradient === next.gradient &&
+    isCropEqual(prev.crop, next.crop)
   );
 };
 

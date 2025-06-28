@@ -659,6 +659,11 @@ export const FullPropsTester = () => {
   const [height, setHeight] = useState(400);
   const [positionX, setPositionX] = useState(0);
   const [positionY, setPositionY] = useState(0);
+  // Crop state
+  const [cropX, setCropX] = useState(0);
+  const [cropY, setCropY] = useState(0);
+  const [cropWidth, setCropWidth] = useState(400);
+  const [cropHeight, setCropHeight] = useState(400);
 
   return (
     <div style={{ padding: 20 }}>
@@ -775,7 +780,9 @@ export const FullPropsTester = () => {
           <label>Image URL:</label>
           <input type="text" value={imageUrl} onChange={e => setImageUrl(e.target.value)} style={{ width: '100%' }} />
         </div>
-        <div style={{ marginBottom: 20, display: 'flex', gap: 20 }}>
+      
+      </div>
+      <div style={{ marginBottom: 20, display: 'flex', gap: 20 }}>
           <div>
             <label>Width: {width}px</label>
             <input
@@ -798,30 +805,53 @@ export const FullPropsTester = () => {
               style={{ width: 200 }}
             />
           </div>
+       
+          {/* Crop sliders */}
           <div>
-            <label>X: {positionX}px</label>
+            <label>Crop X: {cropX}px</label>
             <input
               type="range"
-              min="-500"
-              max="500"
-              value={positionX}
-              onChange={e => setPositionX(Number(e.target.value))}
+              min="0"
+              max={width - 10}
+              value={cropX}
+              onChange={e => setCropX(Number(e.target.value))}
               style={{ width: 200 }}
             />
           </div>
           <div>
-            <label>Y: {positionY}px</label>
+            <label>Crop Y: {cropY}px</label>
             <input
               type="range"
-              min="-500"
-              max="500"
-              value={positionY}
-              onChange={e => setPositionY(Number(e.target.value))}
+              min="0"
+              max={height - 10}
+              value={cropY}
+              onChange={e => setCropY(Number(e.target.value))}
+              style={{ width: 200 }}
+            />
+          </div>
+          <div>
+            <label>Crop Width: {cropWidth}px</label>
+            <input
+              type="range"
+              min="10"
+              max={width - cropX}
+              value={cropWidth}
+              onChange={e => setCropWidth(Number(e.target.value))}
+              style={{ width: 200 }}
+            />
+          </div>
+          <div>
+            <label>Crop Height: {cropHeight}px</label>
+            <input
+              type="range"
+              min="10"
+              max={height - cropY}
+              value={cropHeight}
+              onChange={e => setCropHeight(Number(e.target.value))}
               style={{ width: 200 }}
             />
           </div>
         </div>
-      </div>
       <div style={{ backgroundColor: 'red',height:`${height}px`,width:`${width}px`,border: '2px solid #ddd', borderRadius: 8, overflow: 'hidden', margin: '0 auto', position: 'relative', left: positionX, top: positionY }}>
         <ImageFilters
           imageUrl={imageUrl}
@@ -844,13 +874,11 @@ export const FullPropsTester = () => {
             b: parseInt(canvasColor.slice(5, 7), 16),
             a: Math.round(canvasAlpha * 100)
           }}
-          gradient={getGradientString()}
+          // gradient={getGradientString()}
           filter={filter}
           preview={preview}
-          styles={{
-           height:`${height}px`,width:`${width}px`
-        
-          }}
+          styles={{}}
+          // crop={{ x: cropX, y: cropY, width: cropWidth, height: cropHeight }}
           saveImage={file => console.log('saveImage', file)}
         />
       </div>
