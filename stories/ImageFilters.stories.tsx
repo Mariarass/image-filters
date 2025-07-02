@@ -655,15 +655,15 @@ export const FullPropsTester = () => {
     return `radial-gradient(circle, ${c1}, ${c2}, ${c3})`;
   };
 
-  const [width, setWidth] = useState(400);
-  const [height, setHeight] = useState(400);
+  const [width, setWidth] = useState(1024);
+  const [height, setHeight] = useState(768);
   const [positionX, setPositionX] = useState(0);
   const [positionY, setPositionY] = useState(0);
   // Crop state
   const [cropX, setCropX] = useState(0);
   const [cropY, setCropY] = useState(0);
-  const [cropWidth, setCropWidth] = useState(400);
-  const [cropHeight, setCropHeight] = useState(400);
+  const [cropWidth, setCropWidth] = useState(496);
+  const [cropHeight, setCropHeight] = useState(768);
 
   return (
     <div style={{ padding: 20 }}>
@@ -782,8 +782,20 @@ export const FullPropsTester = () => {
         </div>
       
       </div>
-      <div style={{ marginBottom: 20, display: 'flex', gap: 20 }}>
+      <div style={{ marginBottom: 20, display: 'flex', gap: 20,flexDirection: 'column' }}>
+      <div>
+            <label>Position X: {positionX}px</label>
+            <input
+              type="range"
+              min="-100"
+              max="100"
+              value={positionX}
+              onChange={e => setPositionX(Number(e.target.value))}
+              style={{ width: 200 }}
+            />
+          </div>
           <div>
+            
             <label>Width: {width}px</label>
             <input
               type="range"
@@ -852,7 +864,7 @@ export const FullPropsTester = () => {
             />
           </div>
         </div>
-      <div style={{ backgroundColor: 'red',height:`${height}px`,width:`${width}px`,border: '2px solid #ddd', borderRadius: 8, overflow: 'hidden', margin: '0 auto', position: 'relative', left: positionX, top: positionY }}>
+      <div style={{ backgroundColor: 'red',border: '2px solid #ddd', borderRadius: 8, overflow: 'hidden', margin: '0 auto', position: 'relative', left: positionX, top: positionY }}>
         <ImageFilters
           imageUrl={imageUrl}
           brightness={brightness}
@@ -878,7 +890,7 @@ export const FullPropsTester = () => {
           filter={filter}
           preview={preview}
           styles={{}}
-          // crop={{ x: cropX, y: cropY, width: cropWidth, height: cropHeight }}
+          crop={{ x: cropX, y: cropY, width: cropWidth, height: cropHeight }}
           saveImage={file => console.log('saveImage', file)}
         />
       </div>

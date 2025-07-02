@@ -737,7 +737,9 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                     const u_gradientLoc = gl.getUniformLocation(program, "u_gradient");
                     gl.uniform1i(u_gradientLoc, 1); // TEXTURE1
                 }
-                gl.viewport(0, 0, width, height);
+                gl.viewport(0, 0, crop?.width ?? width, crop?.height ?? height);
+                canvas.width = crop?.width ?? width;
+                canvas.height = crop?.height ?? height;
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
             };
         }
@@ -887,18 +889,20 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
 
 
     return (
-        // <div style={{ position: 'absolute', width: '100%', height: '100%',overflow: 'hidden', ...styles }}>
+        <div
+            style={{
+                width: crop?.width ?? imageRef.current.naturalWidth,
+                height: crop?.height ?? imageRef.current.naturalHeight,
+                overflow: 'hidden',
+                position: 'relative'
+            }}
+        >
             <canvas
                 ref={canvasRef}
-                style={preview ? { display: 'none' } : { width: '100%', height: '100%',position: 'relative',
-                  objectFit: 'cover',
-                  top: 0, left: 0, right: 0, bottom: 0 }}
+    
+                style={preview ? { display: 'none' } : { display: 'block' }}
             />
-            
-
-
-            
-        // </div>
+        </div>
     );
 };
 
