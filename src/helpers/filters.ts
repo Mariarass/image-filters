@@ -370,9 +370,7 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
         ]),
       },
 
-    retro: { saturate: 50, contrast: -15 },
 
-   
 
     mutedSepia: { brightness: -10, contrast: 5 },
 
@@ -391,8 +389,14 @@ export const predefinedFilters: Record<string, PredefinedFilter> = {
     nightVibes: { brightness: -30, contrast: 30, saturate: -10, hueRotate: -10 },
 
     vintageFilm: { contrast: -10, brightness: -15, saturate: -20 },
-
-
+    static: { contrast: -15, saturate: -100 },
+    frequency: { contrast: -15, saturate: -100,shadows: -52,grain: 9 },
+    broadcast: { contrast: -21, saturate: -100,shadows: -60,grain: 9 },
+    retro: { contrast: -27, saturate: -100 ,brightness: 34},
+    transistor: { contrast: 17, saturate: -100 ,brightness: -13,grain: 21},
+    jazz: { contrast:-64, saturate: -100 ,brightness: 29,grain: 0},
+    classic: {  saturate: -100 ,brightness: 24,grain: 21},
+    naight8: { saturate: -100},
 
     goldenTint: {
         colorMatrix: new Float32Array([

@@ -772,6 +772,11 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 texMatrix = mat3mul(texMatrix, t1);
                 texMatrix = mat3mul(texMatrix, rot);
                 texMatrix = mat3mul(texMatrix, t2);
+
+
+
+                
+                
                 const u_texMatrixLoc = gl.getUniformLocation(program, "u_texMatrix");
                 gl.uniformMatrix3fv(u_texMatrixLoc, false, texMatrix);
                 
