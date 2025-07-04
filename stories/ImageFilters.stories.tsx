@@ -631,7 +631,8 @@ export const FullPropsTester = () => {
   const [opacity1, setOpacity1] = useState(100);
   const [opacity2, setOpacity2] = useState(100);
   const [opacity3, setOpacity3] = useState(100);
-
+  const [flip, setFlip] = useState('none');
+  const [rotate, setRotate] = useState(0);
   // Filter presets (example)
   const filterOptions = [
     'none',
@@ -783,7 +784,9 @@ export const FullPropsTester = () => {
       
       </div>
       <div style={{ marginBottom: 20, display: 'flex', gap: 20,flexDirection: 'column' }}>
+      
       <div>
+
             <label>Position X: {positionX}px</label>
             <input
               type="range"
@@ -823,7 +826,7 @@ export const FullPropsTester = () => {
             <label>Crop X: {cropX}px</label>
             <input
               type="range"
-              min="0"
+              min={-width + 10}
               max={width - 10}
               value={cropX}
               onChange={e => setCropX(Number(e.target.value))}
@@ -834,7 +837,7 @@ export const FullPropsTester = () => {
             <label>Crop Y: {cropY}px</label>
             <input
               type="range"
-              min="0"
+              min={-height + 10}
               max={height - 10}
               value={cropY}
               onChange={e => setCropY(Number(e.target.value))}
@@ -863,6 +866,15 @@ export const FullPropsTester = () => {
               style={{ width: 200 }}
             />
           </div>
+          <div>
+            <label>Flip:</label>
+            <button onClick={() => setFlip('horizontal')}>Horizontal</button>
+            <button onClick={() => setFlip('vertical')}>Vertical</button>
+          </div>
+        </div>
+        <div>
+          <label>Rotate: {rotate}°</label>
+          <input type="range" min="0" max="360" value={rotate} onChange={e => setRotate(Number(e.target.value))} style={{ width: '100%' }} />
         </div>
       <div style={{ backgroundColor: 'red',border: '2px solid #ddd', borderRadius: 8, overflow: 'hidden', margin: '0 auto', position: 'relative', left: positionX, top: positionY }}>
         <ImageFilters
@@ -889,9 +901,11 @@ export const FullPropsTester = () => {
           // gradient={getGradientString()}
           filter={filter}
           preview={preview}
-          styles={{}}
+          // styles={{}}
           crop={{ x: cropX, y: cropY, width: cropWidth, height: cropHeight }}
           saveImage={file => console.log('saveImage', file)}
+          flip={flip}
+          rotate={rotate}
         />
       </div>
      

@@ -173,6 +173,8 @@ export type FilterProps = {
     }
     gradient?:string
     crop?: CropRect;
+    flip?:string;
+    rotate?:number;
 };
 
 const WebGLImageFilter: React.FC<FilterProps> = ({
@@ -196,6 +198,8 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
                                                      highlights = 0,
                                                      canvasColor,
                                                      gradient,
+                                                     flip,
+                                                     rotate,
                                                      crop
                                                  }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -205,7 +209,7 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
   //  const [savedImage, setSavedImage] = useState<string | null>(null);
     const filterId = `filter-${uuidv4()}`;
 
-   
+
 
     // Debounce the values
     const debouncedBrightness = useDebounce(brightness, 300);
@@ -312,9 +316,10 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     attribute vec2 a_position;
     attribute vec2 a_texCoord;
     varying vec2 v_texCoord;
+    uniform mat3 u_texMatrix;
     void main() {
       gl_Position = vec4(a_position, 0, 1);
-      v_texCoord = a_texCoord;
+      v_texCoord = (u_texMatrix * vec3(a_texCoord, 1)).xy;
     }
   `;
 
@@ -338,7 +343,6 @@ const WebGLImageFilter: React.FC<FilterProps> = ({
     uniform vec4 u_canvasColor;
     uniform vec2 u_resolution;
     uniform int u_hasGradient;
-    uniform vec4 u_crop;
     varying vec2 v_texCoord;
 
     // Functions for color operations
@@ -413,10 +417,8 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
     }
 
     void main() {
-      vec2 cropOrigin = u_crop.xy;
-      vec2 cropSize = u_crop.zw;
       vec2 texSize = u_resolution;
-      vec2 cropCoord = (v_texCoord * cropSize + cropOrigin) / texSize;
+      vec2 cropCoord = v_texCoord;
       vec4 origColor = texture2D(u_image, cropCoord);
       
       // Always apply colorMatrix (userMatrix * presetMatrix)
@@ -524,7 +526,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
             setGradCanvas(null);
             setGradReady(true);
         }
-    }, [gradient, imageUrl, debouncedGradient]);
+    }, [gradient, imageUrl, debouncedGradient,flip]);
 
 
 
@@ -564,6 +566,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
     }, [imageUrl]);
 
     useEffect(() => {
+ 
         const canvas = canvasRef.current;
         if (!canvas) return;
         const gl = canvas.getContext("webgl", { preserveDrawingBuffer: true });
@@ -697,7 +700,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 const u_highlightsLoc = gl.getUniformLocation(program, "u_highlights");
                 const u_canvasColorLoc = gl.getUniformLocation(program, "u_canvasColor");
                 const u_hasGradientLoc = gl.getUniformLocation(program, "u_hasGradient");
-                const u_cropLoc = gl.getUniformLocation(program, "u_crop");
+                const u_resolutionLoc = gl.getUniformLocation(program, "u_resolution");
                 gl.uniformMatrix4fv(u_colorMatrixLoc, false, u_colorMatrix);
                 gl.uniform4fv(u_biasLoc, u_bias);
                 gl.uniform1f(u_brightnessLoc, finalBrightness);
@@ -719,16 +722,58 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                   (canvasColor?.a ?? 0) / 100
                 );
                 gl.uniform1i(u_hasGradientLoc, hasGradient ? 1 : 0);
-                gl.uniform4f(
-                  u_cropLoc,
-                  crop?.x ?? 0,
-                  crop?.y ?? 0,
-                  crop?.width ?? width,
-                  crop?.height ?? height
-                );
-                const u_resolutionLoc = gl.getUniformLocation(program, "u_resolution");
                 gl.uniform2f(u_resolutionLoc, width, height);
+                // --- TEX MATRIX ---
+                // crop, flip, rotate
+                const cropX = crop?.x ?? 0;
+                const cropY = crop?.y ?? 0;
+                const cropWidth = crop?.width ?? width;
+                const cropHeight = crop?.height ?? height;
+                let flipX = 1, flipY = 1;
+                if (flip === 'horizontal') flipX = -1;
+                if (flip === 'vertical') flipY = -1;
+                // scale and offset for crop
+                const texXOff = cropX / width;
+                const texYOff = cropY / height;
+                const texXScale = cropWidth / width;
+                const texYScale = cropHeight / height;
+                // flip center
+                const flipTransX = flipX === -1 ? 1 : 0;
+                const flipTransY = flipY === -1 ? 1 : 0;
+                // --- ROTATE ---
+                let angle = (rotate ?? 0) * Math.PI / 180;
+                let cosA = Math.cos(angle);
+                let sinA = Math.sin(angle);
              
+                const cx = texXOff + texXScale / 2;
+                const cy = texYOff + texYScale / 2;
+               
+                let m = [
+                  texXScale * flipX, 0, 0,
+                  0, texYScale * flipY, 0,
+                  texXOff + flipTransX * texXScale, texYOff + flipTransY * texYScale, 1
+                ];
+          
+                function mat3mul(a: number[], b: number[]): number[] {
+                  return [
+                    a[0]*b[0]+a[1]*b[3], a[0]*b[1]+a[1]*b[4], 0,
+                    a[3]*b[0]+a[4]*b[3], a[3]*b[1]+a[4]*b[4], 0,
+                    a[6]*b[0]+a[7]*b[3]+b[6], a[6]*b[1]+a[7]*b[4]+b[7], 1
+                  ];
+                }
+             
+                const t1 = [1,0,0,0,1,0,-cx,-cy,1];
+              
+                const rot = [cosA,-sinA,0,sinA,cosA,0,0,0,1];
+        
+                const t2 = [1,0,0,0,1,0,cx,cy,1];
+       
+                let texMatrix = m;
+                texMatrix = mat3mul(texMatrix, t1);
+                texMatrix = mat3mul(texMatrix, rot);
+                texMatrix = mat3mul(texMatrix, t2);
+                const u_texMatrixLoc = gl.getUniformLocation(program, "u_texMatrix");
+                gl.uniformMatrix3fv(u_texMatrixLoc, false, texMatrix);
                 
                 // Bind textures to samplers
                 const u_imageLoc = gl.getUniformLocation(program, "u_image");
@@ -737,12 +782,14 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                     const u_gradientLoc = gl.getUniformLocation(program, "u_gradient");
                     gl.uniform1i(u_gradientLoc, 1); // TEXTURE1
                 }
-                gl.viewport(0, 0, crop?.width ?? width, crop?.height ?? height);
-                canvas.width = crop?.width ?? width;
-                canvas.height = crop?.height ?? height;
+                canvas.width  = cropWidth;
+                canvas.height = cropHeight;
+                gl.viewport(0, 0, cropWidth, cropHeight);
                 gl.drawArrays(gl.TRIANGLES, 0, 6);
+                
             };
         }
+
         // If gradient exists, wait for its readiness
         if (gradient && !gradReady) {
         
@@ -775,6 +822,8 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         gradCanvas,
         gradReady,
         crop,
+        flip,
+        rotate,
     ]);
 
 
@@ -854,6 +903,8 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         debouncedHighlights,  
         debouncedCanvasColor,
         debouncedGradient,
+        flip,
+  
      
     ]);
 
@@ -863,6 +914,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
     saturate(${finalSaturation*100}%)
      hue-rotate(${finalHue*360}deg)`;
     const previewMatrix = convert4x4to4x5(finalMatrix);
+
 
     if (preview) {
         return (
@@ -900,7 +952,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
             <canvas
                 ref={canvasRef}
     
-                style={preview ? { display: 'none' } : { display: 'block' }}
+                style={{ display: 'block',border: '1px solid yellow' }}
             />
         </div>
     );
@@ -938,6 +990,8 @@ const areEqual = (prev: FilterProps, next: FilterProps) => {
     prev.highlights === next.highlights &&
     isCanvasColorEqual(prev.canvasColor, next.canvasColor) &&
     prev.gradient === next.gradient &&
+    prev.flip === next.flip &&
+    prev.rotate === next.rotate &&
     isCropEqual(prev.crop, next.crop)
   );
 };
