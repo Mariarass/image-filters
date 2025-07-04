@@ -406,7 +406,6 @@ vec3 hsl2rgb(vec3 hsl) {
   return vec3(r, g, b);
 }
 
-
 vec3 adjustHueHSL(vec3 color, float hueRotation) {
   vec3 hsl = rgb2hsl(color);
   hsl.x = mod(hsl.x + hueRotation, 1.0);
@@ -516,8 +515,6 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
 
 }
 
-
-
     useEffect(() => {
       
         if (gradient) {  
@@ -527,8 +524,6 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
             setGradReady(true);
         }
     }, [gradient, imageUrl, debouncedGradient,flip]);
-
-
 
         useEffect(() => {
             setGradCanvas(null);
@@ -734,9 +729,10 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 if (flip === 'vertical') flipY = -1;
                 // scale and offset for crop
                 const texXOff = cropX / width;
-                const texYOff = cropY / height;
+                const texYOff   = (height - cropY - cropHeight) / height; // смещение
+                const texYScale = cropHeight / height;   
                 const texXScale = cropWidth / width;
-                const texYScale = cropHeight / height;
+                // const texYScale = cropHeight / height;
                 // flip center
                 const flipTransX = flipX === -1 ? 1 : 0;
                 const flipTransY = flipY === -1 ? 1 : 0;
@@ -794,7 +790,6 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 
             };
         }
-
         // If gradient exists, wait for its readiness
         if (gradient && !gradReady) {
         
@@ -831,10 +826,6 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         rotate,
     ]);
 
-
-
-    
-
     // Save the image if a saveImage function is provided
     useEffect(() => {
       console.log('saveImage',saveImage);
@@ -870,7 +861,6 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 }
             }
 
-
             const tempCanvas = document.createElement("canvas");
             tempCanvas.width = width;
             tempCanvas.height = height;
@@ -879,7 +869,6 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
 
             const imageData = new ImageData(new Uint8ClampedArray(flippedPixels), width, height);
             ctx.putImageData(imageData, 0, 0);
-
 
             tempCanvas.toBlob(blob => {
                 if (blob) {
@@ -910,9 +899,8 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         debouncedGradient,
         flip,
   
-     
+    
     ]);
-
 
     const previewFilters = `brightness(${finalBrightness*100}%) 
     contrast(${finalContrast*100}%) 
@@ -943,21 +931,24 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 />
             </div>
         );}
-
+        console.log('crop',crop);
 
     return (
         <div
             style={{
-                width: crop?.width ?? imageRef.current.naturalWidth,
-                height: crop?.height ?? imageRef.current.naturalHeight,
+                // width: crop?.width ?? imageRef.current.naturalWidth,
+                // height: crop?.height ?? imageRef.current.naturalHeight,
+                width: '100%',
+                height: '100%',
                 overflow: 'hidden',
-                position: 'relative'
+                position: 'relative',
+                objectFit: 'cover'
             }}
         >
             <canvas
                 ref={canvasRef}
     
-                style={{ display: 'block',border: '1px solid yellow' }}
+                style={{ display: 'block',border: '1px solid yellow' ,width: '100%',height: '100%',objectFit: 'cover'}}
             />
         </div>
     );

@@ -679,38 +679,7 @@ export const FullPropsTester = () => {
       <h2>🧪 FullPropsTester: All ImageFilters props</h2>
       \
 
-      <div style={{ backgroundColor: 'red',width:'400px',height:'400px',border: '2px solid #ddd', borderRadius: 8, overflow: 'hidden', margin: '0 auto', position: 'relative', left: positionX, top: positionY }}>
-        <ImageFilters
-          imageUrl={imageUrl}
-          brightness={brightness}
-          contrast={contrast}
-          saturation={saturation}
-          hueRotate={hueRotate}
-          sharpness={sharpness}
-          highlights={highlights}
-          shadows={shadows}
-          vignette={vignette}
-          grain={grain}
-          filterIntensity={filterIntensity * 100}
-          redChannel={redChannel}
-          greenChannel={greenChannel}
-          blueChannel={blueChannel}
-          canvasColor={{
-            r: parseInt(canvasColor.slice(1, 3), 16),
-            g: parseInt(canvasColor.slice(3, 5), 16),
-            b: parseInt(canvasColor.slice(5, 7), 16),
-            a: Math.round(canvasAlpha * 100)
-          }}
-          // gradient={getGradientString()}
-          filter={filter}
-          preview={preview}
-          // styles={{}}
-          crop={{ x: cropX, y: cropY, width: cropWidth, height: cropHeight }}
-          saveImage={file => console.log('saveImage', file)}
-          flip={flip}
-          rotate={rotate}
-        />
-      </div>
+     
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, marginBottom: 30 }}>
         <div>
           <label>Brightness: {brightness}</label>
@@ -918,6 +887,39 @@ export const FullPropsTester = () => {
           <label>Rotate: {rotate}°</label>
           <input type="range" min="0" max="360" value={rotate} onChange={e => setRotate(Number(e.target.value))} style={{ width: '100%' }} />
         </div>
+
+        <div style={{ backgroundColor: 'red',height:'600px',width:'900px',border: '2px solid #ddd', borderRadius: 8, overflow: 'hidden', margin: '0 auto', position: 'relative', left: positionX, top: positionY }}>
+        <ImageFilters
+          imageUrl={imageUrl}
+          brightness={brightness}
+          contrast={contrast}
+          saturation={saturation}
+          hueRotate={hueRotate}
+          sharpness={sharpness}
+          highlights={highlights}
+          shadows={shadows}
+          vignette={vignette}
+          grain={grain}
+          filterIntensity={filterIntensity * 100}
+          redChannel={redChannel}
+          greenChannel={greenChannel}
+          blueChannel={blueChannel}
+          canvasColor={{
+            r: parseInt(canvasColor.slice(1, 3), 16),
+            g: parseInt(canvasColor.slice(3, 5), 16),
+            b: parseInt(canvasColor.slice(5, 7), 16),
+            a: Math.round(canvasAlpha * 100)
+          }}
+          // gradient={getGradientString()}
+          filter={filter}
+          preview={preview}
+          // styles={{}}
+          crop={{ x:0, y: 0, width: 300, height: 300 }}
+          saveImage={file => console.log('saveImage', file)}
+          flip={flip}
+          rotate={rotate}
+        />
+      </div>
     
      
     </div>
