@@ -719,7 +719,7 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 gl.uniform1i(u_hasGradientLoc, hasGradient ? 1 : 0);
                 gl.uniform2f(u_resolutionLoc, width, height);
                 // --- TEX MATRIX ---
-                // crop, flip, rotate
+                // crop, flip
                 const cropX = crop?.x ?? 0;
                 const cropY = crop?.y ?? 0;
                 const cropWidth = crop?.width ?? width;
@@ -729,50 +729,18 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
                 if (flip === 'vertical') flipY = -1;
                 // scale and offset for crop
                 const texXOff = cropX / width;
-                const texYOff   = (height - cropY - cropHeight) / height; // смещение
+                const texYOff   = (height - cropY - cropHeight) / height;
                 const texYScale = cropHeight / height;   
                 const texXScale = cropWidth / width;
-                // const texYScale = cropHeight / height;
                 // flip center
                 const flipTransX = flipX === -1 ? 1 : 0;
                 const flipTransY = flipY === -1 ? 1 : 0;
-                // --- ROTATE ---
-                let angle = (rotate ?? 0) * Math.PI / 180;
-                let cosA = Math.cos(angle);
-                let sinA = Math.sin(angle);
-             
-                const cx = texXOff + texXScale / 2;
-                const cy = texYOff + texYScale / 2;
-               
-                let m = [
+                // --- БЕЗ ROTATE ---
+                let texMatrix = [
                   texXScale * flipX, 0, 0,
                   0, texYScale * flipY, 0,
                   texXOff + flipTransX * texXScale, texYOff + flipTransY * texYScale, 1
                 ];
-          
-                function mat3mul(a: number[], b: number[]): number[] {
-                  return [
-                    a[0]*b[0]+a[1]*b[3], a[0]*b[1]+a[1]*b[4], 0,
-                    a[3]*b[0]+a[4]*b[3], a[3]*b[1]+a[4]*b[4], 0,
-                    a[6]*b[0]+a[7]*b[3]+b[6], a[6]*b[1]+a[7]*b[4]+b[7], 1
-                  ];
-                }
-             
-                const t1 = [1,0,0,0,1,0,-cx,-cy,1];
-              
-                const rot = [cosA,-sinA,0,sinA,cosA,0,0,0,1];
-        
-                const t2 = [1,0,0,0,1,0,cx,cy,1];
-       
-                let texMatrix = m;
-                texMatrix = mat3mul(texMatrix, t1);
-                texMatrix = mat3mul(texMatrix, rot);
-                texMatrix = mat3mul(texMatrix, t2);
-
-
-
-                
-                
                 const u_texMatrixLoc = gl.getUniformLocation(program, "u_texMatrix");
                 gl.uniformMatrix3fv(u_texMatrixLoc, false, texMatrix);
                 
@@ -933,22 +901,29 @@ vec3 adjustHueHSL(vec3 color, float hueRotation) {
         );}
         console.log('crop',crop);
 
+ 
     return (
         <div
             style={{
-                // width: crop?.width ?? imageRef.current.naturalWidth,
-                // height: crop?.height ?? imageRef.current.naturalHeight,
+                // width: containerWidth || '100%',
+                // height: containerHeight || '100%',
                 width: '100%',
                 height: '100%',
                 overflow: 'hidden',
                 position: 'relative',
-                objectFit: 'cover'
+                objectFit: 'cover',
+                
             }}
         >
             <canvas
                 ref={canvasRef}
-    
-                style={{ display: 'block',border: '1px solid yellow' ,width: '100%',height: '100%',objectFit: 'cover'}}
+                style={{ 
+                    display: 'block',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    transform: rotate ? `rotate(${rotate}deg)` : undefined
+                }}
             />
         </div>
     );

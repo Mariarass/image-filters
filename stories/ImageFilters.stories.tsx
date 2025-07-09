@@ -888,7 +888,7 @@ export const FullPropsTester = () => {
           <input type="range" min="0" max="360" value={rotate} onChange={e => setRotate(Number(e.target.value))} style={{ width: '100%' }} />
         </div>
 
-        <div style={{ backgroundColor: 'red',height:'600px',width:'900px',border: '2px solid #ddd', borderRadius: 8, overflow: 'hidden', margin: '0 auto', position: 'relative', left: positionX, top: positionY }}>
+        <div style={{ backgroundColor: 'red',height:'600px',width:'400px',border: '2px solid #ddd', borderRadius: 8, overflow: 'hidden', margin: '0 auto', position: 'relative', left: positionX, top: positionY }}>
         <ImageFilters
           imageUrl={imageUrl}
           brightness={brightness}
@@ -914,7 +914,7 @@ export const FullPropsTester = () => {
           filter={filter}
           preview={preview}
           // styles={{}}
-          crop={{ x:0, y: 0, width: 300, height: 300 }}
+          crop={{ x:0, y: 0, width: 400, height: 300 }}
           saveImage={file => console.log('saveImage', file)}
           flip={flip}
           rotate={rotate}
